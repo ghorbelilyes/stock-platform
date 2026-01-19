@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -10,7 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { TableModule } from 'primeng/table';
-import { Product, ProductService } from '../service/product.service';
+import { Product, ProductService } from '../services/product.service';
 
 @Component({
     selector: 'app-overlay-demo',
@@ -156,14 +156,12 @@ export class OverlayDemo implements OnInit {
 
     selectedProduct!: Product;
 
-    constructor(
-        private productService: ProductService,
-        private confirmationService: ConfirmationService,
-        private messageService: MessageService
-    ) {}
+    private productService = inject(ProductService);
+    private confirmationService = inject(ConfirmationService);
+    private messageService = inject(MessageService);
 
     ngOnInit() {
-        this.productService.getProductsSmall().then((products) => (this.products = products));
+        this.productService.getProductsSmall().then((products: Product[]) => (this.products = products));
 
         this.images = [];
         this.images.push({

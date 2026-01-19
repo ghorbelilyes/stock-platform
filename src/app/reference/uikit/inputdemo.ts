@@ -26,10 +26,10 @@ import { ListboxModule } from 'primeng/listbox';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { TextareaModule } from 'primeng/textarea';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { CountryService } from '../service/country.service';
-import { NodeService } from '../service/node.service';
+import { CountryService } from '../services/country.service';
+import { NodeService } from '../services/node.service';
 import { TreeNode } from 'primeng/api';
-import { Country } from '../service/customer.service';
+import { Country } from '../services/customer.service';
 
 @Component({
     selector: 'app-input-demo',
@@ -316,11 +316,11 @@ export class InputDemo implements OnInit {
     nodeService = inject(NodeService);
 
     ngOnInit() {
-        this.countryService.getCountries().then((countries) => {
+        this.countryService.getCountries().then((countries: Country[]) => {
             this.autoValue = countries;
         });
 
-        this.nodeService.getFiles().then((data) => (this.treeSelectNodes = data));
+        this.nodeService.getFiles().then((data: TreeNode[]) => (this.treeSelectNodes = data));
     }
 
     filterCountry(event: AutoCompleteCompleteEvent) {

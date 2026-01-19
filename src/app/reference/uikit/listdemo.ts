@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DataViewModule } from 'primeng/dataview';
@@ -7,7 +7,7 @@ import { OrderListModule } from 'primeng/orderlist';
 import { PickListModule } from 'primeng/picklist';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
-import { Product, ProductService } from '../service/product.service';
+import { Product, ProductService } from '../services/product.service';
 
 @Component({
     selector: 'app-list-demo',
@@ -171,10 +171,10 @@ export class ListDemo {
 
     orderCities: any[] = [];
 
-    constructor(private productService: ProductService) {}
+    private productService = inject(ProductService);
 
     ngOnInit() {
-        this.productService.getProductsSmall().then((data) => (this.products = data.slice(0, 6)));
+        this.productService.getProductsSmall().then((data: Product[]) => (this.products = data.slice(0, 6)));
 
         this.sourceCities = [
             { name: 'San Francisco', code: 'SF' },

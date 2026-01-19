@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, inject } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
@@ -18,7 +18,7 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { Product, ProductService } from '../service/product.service';
+import { Product, ProductService } from '../../services/product.service';
 
 interface Column {
     field: string;
@@ -229,11 +229,9 @@ export class Crud implements OnInit {
 
     cols!: Column[];
 
-    constructor(
-        private productService: ProductService,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService
-    ) {}
+    private productService = inject(ProductService);
+    private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
 
     exportCSV() {
         this.dt.exportCSV();
@@ -244,7 +242,7 @@ export class Crud implements OnInit {
     }
 
     loadDemoData() {
-        this.productService.getProducts().then((data) => {
+        this.productService.getProducts().then((data: Product[]) => {
             this.products.set(data);
         });
 

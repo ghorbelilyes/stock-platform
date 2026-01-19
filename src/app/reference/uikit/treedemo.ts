@@ -4,7 +4,7 @@ import { TreeModule } from 'primeng/tree';
 import { FormsModule } from '@angular/forms';
 import { TreeTableModule } from 'primeng/treetable';
 import { CommonModule } from '@angular/common';
-import { NodeService } from '../service/node.service';
+import { NodeService } from '../services/node.service';
 
 @Component({
     selector: 'app-tree-demo',
@@ -56,8 +56,8 @@ export class TreeDemo implements OnInit {
     nodeService = inject(NodeService);
 
     ngOnInit() {
-        this.nodeService.getFiles().then((files) => (this.treeValue = files));
-        this.nodeService.getTreeTableNodes().then((files: any) => (this.treeTableValue = files));
+        this.nodeService.getFiles().then((files: TreeNode[]) => (this.treeValue = files));
+        this.nodeService.getTreeTableNodes().then((files: TreeNode[]) => (this.treeTableValue = files));
 
         this.cols = [
             { field: 'name', header: 'Name' },

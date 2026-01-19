@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -16,8 +16,8 @@ import { RippleModule } from 'primeng/ripple';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { TagModule } from 'primeng/tag';
-import { Customer, CustomerService, Representative } from '../service/customer.service';
-import { Product, ProductService } from '../service/product.service';
+import { Customer, CustomerService, Representative } from '../services/customer.service';
+import { Product, ProductService } from '../services/product.service';
 import {ObjectUtils} from "primeng/utils";
 
 interface expandedRows {
@@ -421,22 +421,20 @@ export class TableDemo implements OnInit {
 
     @ViewChild('filter') filter!: ElementRef;
 
-    constructor(
-        private customerService: CustomerService,
-        private productService: ProductService
-    ) {}
+    private customerService = inject(CustomerService);
+    private productService = inject(ProductService);
 
     ngOnInit() {
-        this.customerService.getCustomersLarge().then((customers) => {
+        this.customerService.getCustomersLarge().then((customers: Customer[]) => {
             this.customers1 = customers;
             this.loading = false;
 
             // @ts-ignore
             this.customers1.forEach((customer) => (customer.date = new Date(customer.date)));
         });
-        this.customerService.getCustomersMedium().then((customers) => (this.customers2 = customers));
-        this.customerService.getCustomersLarge().then((customers) => (this.customers3 = customers));
-        this.productService.getProductsWithOrdersSmall().then((data) => (this.products = data));
+        this.customerService.getCustomersMedium().then((customers: Customer[]) => (this.customers2 = customers));
+        this.customerService.getCustomersLarge().then((customers: Customer[]) => (this.customers3 = customers));
+        this.productService.getProductsWithOrdersSmall().then((data: Product[]) => (this.products = data));
 
         this.representatives = [
             { name: 'Amy Elsner', image: 'amyelsner.png' },
