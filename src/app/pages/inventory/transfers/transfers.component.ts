@@ -23,7 +23,7 @@ import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.m
                         <p-button label="New Transfer" icon="pi pi-plus" (onClick)="showTransferWizard = true"></p-button>
                     </div>
 
-                    <p-table [value]="suggestions" [paginator]="true" [rows]="10">
+                    <p-table [value]="suggestions" [paginator]="true" [rows]="10" [loading]="loadingSuggestions">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>From</th>
@@ -60,6 +60,13 @@ import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.m
                                 </td>
                             </tr>
                         </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="8" class="text-center py-8 text-muted-color">
+                                    No transfer suggestions available. Upload data to generate AI-powered recommendations.
+                                </td>
+                            </tr>
+                        </ng-template>
                     </p-table>
                 </div>
             </div>
@@ -67,32 +74,34 @@ import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.m
             <div class="col-span-12">
                 <div class="card">
                     <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Active Transfers</h2>
-                    <p-table [value]="transfers" [paginator]="true" [rows]="10">
+                    <p-table [value]="transfers" [paginator]="true" [rows]="10" [loading]="loadingTransfers">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>ID</th>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Items</th>
-                                <th>Status</th>
-                                <th>ETA</th>
-                                <th>Created</th>
+                                <th>Date</th>
+                                <th>From Store</th>
+                                <th>To Store</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Reason</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-transfer>
                             <tr>
                                 <td>{{ transfer.id }}</td>
-                                <td>{{ transfer.sourceStoreName }}</td>
-                                <td>{{ transfer.destinationStoreName }}</td>
-                                <td>{{ transfer.items.length }} item(s)</td>
-                                <td>
-                                    <app-status-pill 
-                                        [status]="getTransferStatusType(transfer.status)"
-                                        [label]="transfer.status">
-                                    </app-status-pill>
-                                </td>
-                                <td>{{ transfer.etaDays }} days</td>
                                 <td>{{ transfer.createdAt | date:'short' }}</td>
+                                <td>{{ transfer.sourceStoreName || transfer.sourceStoreId }}</td>
+                                <td>{{ transfer.destinationStoreName || transfer.destinationStoreId }}</td>
+                                <td>{{ transfer.items[0]?.productName || transfer.items[0]?.sku || 'N/A' }}</td>
+                                <td>{{ transfer.items[0]?.quantity || 0 }}</td>
+                                <td>{{ transfer.notes || 'N/A' }}</td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-muted-color">
+                                    No transfers found. Create a transfer to get started.
+                                </td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -110,17 +119,46 @@ export class TransfersComponent implements OnInit {
     suggestions: TransferSuggestion[] = [];
     transfers: Transfer[] = [];
     showTransferWizard = false;
+    loadingSuggestions = false;
+    loadingTransfers = false;
 
     ngOnInit() {
+        this.loadSuggestions();
+        this.loadTransfers();
+    }
+
+    private loadSuggestions() {
+        this.loadingSuggestions = true;
         this.suggestions = this.transferService.getSuggestions();
-        this.transfers = this.transferService.getTransfers();
+        this.loadingSuggestions = false;
+    }
+
+    private loadTransfers() {
+        this.loadingTransfers = true;
+        this.transferService.getTransfers().subscribe({
+            next: (transfers) => {
+                this.transfers = transfers;
+                this.loadingTransfers = false;
+            },
+            error: (error) => {
+                console.error('Error loading transfers:', error);
+                this.loadingTransfers = false;
+            }
+        });
     }
 
     approveTransfer(suggestionId: string) {
-        const transfer = this.transferService.approveSuggestion(suggestionId);
-        this.transfers = this.transferService.getTransfers();
-        // Remove approved suggestion
-        this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
+        this.transferService.approveSuggestion(suggestionId, undefined).subscribe({
+            next: (transfer) => {
+                // Add to transfers list
+                this.transfers = [transfer, ...this.transfers];
+                // Remove approved suggestion
+                this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
+            },
+            error: (error) => {
+                console.error('Error approving transfer:', error);
+            }
+        });
     }
 
     getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' {

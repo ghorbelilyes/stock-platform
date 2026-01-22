@@ -1,118 +1,124 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map, catchError, throwError } from 'rxjs';
 import { TransferSuggestion, Transfer, TransferStatus } from '../models/inventory.models';
 import { InventoryDataService } from './inventory-data.service';
-import { Stock } from '../models/inventory.models';
+import { API_CONFIG } from '../config/api.config';
 
-// TODO: Replace with backend API calls
-// MOCK DATA UNTIL BACKEND READY
+interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message: string;
+    error?: {
+        code: string;
+        message: string;
+        details: string[];
+    };
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class TransferService {
-    private suggestions: TransferSuggestion[] = [];
-    private transfers: Transfer[] = [];
+    private http = inject(HttpClient);
+    private inventoryService = inject(InventoryDataService);
+    private apiUrl = API_CONFIG.baseUrl;
 
-    constructor(private inventoryService: InventoryDataService) {
-        this.generateMockSuggestions();
-    }
-
-    // MOCK DATA UNTIL BACKEND READY
-    private generateMockSuggestions(): void {
-        const stores = this.inventoryService.getStores();
-        const stocks = this.inventoryService.getStocks();
-        const storeStocks = new Map<string, Stock[]>();
-
-        stocks.forEach(stock => {
-            if (!storeStocks.has(stock.storeId)) {
-                storeStocks.set(stock.storeId, []);
-            }
-            storeStocks.get(stock.storeId)!.push(stock);
-        });
-
-        // Generate suggestions based on stock levels
-        stores.forEach(fromStore => {
-            if (fromStore.type === 'warehouse') return;
-
-            const fromStocks = storeStocks.get(fromStore.id) || [];
-            fromStocks.forEach(stock => {
-                const available = stock.onHand - stock.reserved;
-                if (available > stock.safetyStock + stock.reorderPoint + 50) {
-                    // Surplus detected - find stores that need it
-                    stores.forEach(toStore => {
-                        if (toStore.id === fromStore.id || toStore.type === 'warehouse') return;
-                        const toStock = storeStocks.get(toStore.id)?.find(s => s.sku === stock.sku);
-                        if (toStock && (toStock.onHand - toStock.reserved) < toStock.reorderPoint) {
-                            const surplus = available - (stock.safetyStock + stock.reorderPoint);
-                            const need = toStock.reorderPoint - (toStock.onHand - toStock.reserved);
-                            const qty = Math.min(surplus, need, 100);
-
-                            if (qty > 10) {
-                                const confidence = Math.floor(Math.random() * 20) + 75; // 75-95%
-                                this.suggestions.push({
-                                    id: `suggestion-${this.suggestions.length + 1}`,
-                                    fromStoreId: fromStore.id,
-                                    fromStoreName: fromStore.name,
-                                    toStoreId: toStore.id,
-                                    toStoreName: toStore.name,
-                                    sku: stock.sku,
-                                    productName: `Product ${stock.sku}`,
-                                    quantity: qty,
-                                    priority: confidence > 85 ? 'high' : confidence > 75 ? 'medium' : 'low',
-                                    reason: `Low stock at ${toStore.name} (${toStock.onHand - toStock.reserved} units)`,
-                                    confidence,
-                                    createdAt: new Date().toISOString()
-                                });
-                            }
-                        }
-                    });
-                }
-            });
-        });
-    }
-
-    // TODO: Replace with HttpClient GET call
+    // Get transfer suggestions (mock for now - AI service not implemented)
     getSuggestions(): TransferSuggestion[] {
-        return [...this.suggestions];
+        // TODO: Implement AI service endpoint when available
+        // For now, return empty array or generate from stock data
+        return [];
     }
 
-    // TODO: Replace with HttpClient POST call
-    approveSuggestion(suggestionId: string, quantity?: number): Transfer {
-        const suggestion = this.suggestions.find(s => s.id === suggestionId);
-        if (!suggestion) {
-            throw new Error('Suggestion not found');
+    // Get all transfers with optional filters
+    getTransfers(storeSent?: number, storeReceive?: number, productId?: number, startDate?: string, endDate?: string): Observable<Transfer[]> {
+        let params = new HttpParams();
+        
+        if (storeSent) {
+            params = params.set('storeSent', storeSent.toString());
+        }
+        if (storeReceive) {
+            params = params.set('storeReceive', storeReceive.toString());
+        }
+        if (productId) {
+            params = params.set('productId', productId.toString());
+        }
+        if (startDate) {
+            params = params.set('startDate', startDate);
+        }
+        if (endDate) {
+            params = params.set('endDate', endDate);
         }
 
-        const transfer: Transfer = {
-            id: `transfer-${this.transfers.length + 1}`,
+        return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.transfers}`, { params })
+            .pipe(
+                map(response => {
+                    if (response.success && response.data) {
+                        // Transform backend transfer format to frontend format
+                        return response.data.map((t: any) => this.transformTransfer(t));
+                    }
+                    return [];
+                }),
+                catchError(error => {
+                    console.error('Error fetching transfers:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Transform backend transfer to frontend format
+    private transformTransfer(backendTransfer: any): Transfer {
+        return {
+            id: backendTransfer.id?.toString() || '',
+            createdAt: backendTransfer.date || new Date().toISOString(),
+            status: 'approved' as TransferStatus, // Default status
+            items: [{
+                sku: backendTransfer.idProduct?.toString() || '',
+                productName: `Product ${backendTransfer.idProduct}`,
+                quantity: backendTransfer.quantity || 0
+            }],
+            sourceStoreId: backendTransfer.idStoreSent?.toString() || '',
+            sourceStoreName: `Store ${backendTransfer.idStoreSent}`,
+            destinationStoreId: backendTransfer.idStoreReceive?.toString() || '',
+            destinationStoreName: `Store ${backendTransfer.idStoreReceive}`,
+            etaDays: 2, // Default ETA
+            notes: backendTransfer.reason
+        };
+    }
+
+    // Approve transfer suggestion (create new transfer)
+    approveSuggestion(suggestionId: string, quantity?: number): Observable<Transfer> {
+        // TODO: Implement when backend endpoint is available
+        // For now, return mock transfer
+        const mockTransfer: Transfer = {
+            id: `transfer-${Date.now()}`,
             createdAt: new Date().toISOString(),
             status: 'approved',
             items: [{
-                sku: suggestion.sku,
-                productName: suggestion.productName,
-                quantity: quantity || suggestion.quantity
+                sku: '',
+                productName: '',
+                quantity: quantity || 0
             }],
-            sourceStoreId: suggestion.fromStoreId,
-            sourceStoreName: suggestion.fromStoreName,
-            destinationStoreId: suggestion.toStoreId,
-            destinationStoreName: suggestion.toStoreName,
-            etaDays: 2,
-            estimatedCost: (quantity || suggestion.quantity) * 5 // Mock cost
+            sourceStoreId: '',
+            sourceStoreName: '',
+            destinationStoreId: '',
+            destinationStoreName: '',
+            etaDays: 2
         };
-
-        this.transfers.push(transfer);
-        return transfer;
+        
+        return new Observable(observer => {
+            observer.next(mockTransfer);
+            observer.complete();
+        });
     }
 
-    // TODO: Replace with HttpClient GET call
-    getTransfers(): Transfer[] {
-        return [...this.transfers];
-    }
-
-    // TODO: Replace with HttpClient PUT call
-    updateTransferStatus(transferId: string, status: TransferStatus): void {
-        const transfer = this.transfers.find(t => t.id === transferId);
-        if (transfer) {
-            transfer.status = status;
-        }
+    // Update transfer status
+    updateTransferStatus(transferId: string, status: TransferStatus): Observable<void> {
+        // TODO: Implement when backend endpoint is available
+        return new Observable(observer => {
+            observer.next();
+            observer.complete();
+        });
     }
 }

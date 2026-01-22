@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
@@ -9,12 +10,14 @@ import { StatusPillComponent } from '../../shared/components/status-pill/status-
 import { InventoryDataService } from '../../shared/services/inventory-data.service';
 import { TransferService } from '../../shared/services/transfer.service';
 import { TransferSuggestion } from '../../shared/models/inventory.models';
+import { forkJoin } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
     imports: [
         CommonModule,
+        RouterModule,
         TableModule,
         ButtonModule,
         ChartModule,
@@ -29,7 +32,7 @@ import { TransferSuggestion } from '../../shared/models/inventory.models';
                 <div class="card mb-6">
                     <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-4">AI-Powered Inventory Management for Multi-Store Businesses.</h1>
                     <div class="flex flex-wrap gap-3">
-                        <p-button label="Upload Files" icon="pi pi-cloud-upload" [outlined]="true"></p-button>
+                        <p-button label="Upload Files" icon="pi pi-cloud-upload" [outlined]="true" routerLink="/inventory/upload"></p-button>
                         <p-button label="Analyze Data" icon="pi pi-search" severity="success"></p-button>
                         <p-button label="Generate Transfers" icon="pi pi-arrows-h" severity="success"></p-button>
                     </div>
@@ -76,7 +79,7 @@ import { TransferSuggestion } from '../../shared/models/inventory.models';
                     <h2 class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-2">AI-Generated Transfer Suggestions</h2>
                     <p class="text-muted-color mb-6">Automated transfer recommendations to optimize inventory levels.</p>
                     
-                    <p-table [value]="transferSuggestions" [paginator]="true" [rows]="10">
+                    <p-table [value]="transferSuggestions" [paginator]="true" [rows]="10" [loading]="loading">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th>From</th>
@@ -119,6 +122,13 @@ import { TransferSuggestion } from '../../shared/models/inventory.models';
                                 </td>
                             </tr>
                         </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="8" class="text-center py-8 text-muted-color">
+                                    No transfer suggestions available. Upload data to generate AI-powered recommendations.
+                                </td>
+                            </tr>
+                        </ng-template>
                     </p-table>
                 </div>
             </div>
@@ -155,6 +165,7 @@ export class Dashboard implements OnInit {
     salesChartData: any;
     stockChartOptions: any;
     salesChartOptions: any;
+    loading = false;
 
     ngOnInit() {
         this.loadKPIData();
@@ -163,45 +174,77 @@ export class Dashboard implements OnInit {
     }
 
     private loadKPIData() {
-        const stores = this.inventoryService.getStores();
-        const stocks = this.inventoryService.getStocks();
-        const transfers = this.transferService.getTransfers();
-        
-        const uniqueSkus = new Set(stocks.map(s => s.sku));
-        const activeTransfers = transfers.filter(t => 
-            t.status === 'approved' || t.status === 'picked' || t.status === 'in_transit'
-        );
+        // Load data from APIs
+        forkJoin({
+            products: this.inventoryService.getProducts(),
+            stocks: this.inventoryService.getStocks(),
+            transfers: this.transferService.getTransfers()
+        }).subscribe({
+            next: (data) => {
+                // Calculate KPIs
+                this.kpiData.totalProducts = data.products.length;
+                
+                // Count active transfers
+                const activeTransfers = data.transfers.filter((t: any) => 
+                    t.status === 'approved' || t.status === 'picked' || t.status === 'in_transit'
+                );
+                this.kpiData.transfersInProgress = activeTransfers.length;
 
-        const lowStockItems = stocks.filter(s => {
-            const available = s.onHand - s.reserved;
-            return available < s.reorderPoint;
+                // For stores and stockout alerts, we'll need to fetch stocks with more details
+                // For now, set defaults
+                this.kpiData.storesMonitored = 0; // TODO: Implement store count endpoint
+                this.kpiData.stockoutRiskAlerts = 0; // TODO: Calculate from stock data
+            },
+            error: (error) => {
+                console.error('Error loading KPI data:', error);
+            }
         });
-
-        this.kpiData = {
-            storesMonitored: stores.length,
-            totalProducts: uniqueSkus.size,
-            transfersInProgress: activeTransfers.length,
-            stockoutRiskAlerts: lowStockItems.length
-        };
     }
 
     private loadTransferSuggestions() {
+        this.loading = true;
+        // Get suggestions from service (currently returns empty array)
         this.transferSuggestions = this.transferService.getSuggestions().slice(0, 10);
+        this.loading = false;
     }
 
     approveTransfer(suggestionId: string) {
-        this.transferService.approveSuggestion(suggestionId);
-        this.transferSuggestions = this.transferSuggestions.filter(s => s.id !== suggestionId);
-        this.loadKPIData(); // Refresh KPI data
+        this.transferService.approveSuggestion(suggestionId, undefined).subscribe({
+            next: (transfer) => {
+                // Remove suggestion from list
+                this.transferSuggestions = this.transferSuggestions.filter(s => s.id !== suggestionId);
+                // Refresh KPI data
+                this.loadKPIData();
+            },
+            error: (error) => {
+                console.error('Error approving transfer:', error);
+            }
+        });
     }
 
     private prepareCharts() {
-        const stores = this.inventoryService.getStores();
-        const stocks = this.inventoryService.getStocks();
-        const sales = this.inventoryService.getSales();
+        // Load data for charts
+        forkJoin({
+            stocks: this.inventoryService.getStocks(),
+            sales: this.inventoryService.getSales()
+        }).subscribe({
+            next: (data) => {
+                this.prepareStockChart(data.stocks);
+                this.prepareSalesChart(data.sales);
+            },
+            error: (error) => {
+                console.error('Error loading chart data:', error);
+                // Use default empty charts
+                this.prepareDefaultCharts();
+            }
+        });
+    }
 
-        // Stock Level Analysis Chart
-        const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Dec'];
+    private prepareStockChart(stocks: any) {
+        // Process stock data for chart
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        
+        // Group stocks by status (mock calculation for now)
         const inStock = months.map(() => Math.floor(Math.random() * 5) + 3);
         const lowStock = months.map(() => Math.floor(Math.random() * 2) + 1);
         const outOfStock = months.map(() => Math.floor(Math.random() * 1));
@@ -245,20 +288,30 @@ export class Dashboard implements OnInit {
                 }
             }
         };
+    }
 
-        // Sales Trends Chart
-        const storeNames = stores.filter(s => s.type === 'store').slice(0, 2).map(s => s.name);
-        const salesData = storeNames.map((storeName, index) => {
-            const monthlyData = months.map(() => Math.floor(Math.random() * 15) + 5);
-            return {
-                label: storeName,
-                data: monthlyData,
-                borderColor: index === 0 ? '#3B82F6' : '#F97316',
-                backgroundColor: index === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(249, 115, 22, 0.1)',
+    private prepareSalesChart(sales: any) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        
+        // Process sales data (mock for now)
+        const salesData = [
+            {
+                label: 'Store 1',
+                data: months.map(() => Math.floor(Math.random() * 15) + 5),
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 tension: 0.4,
                 fill: true
-            };
-        });
+            },
+            {
+                label: 'Store 2',
+                data: months.map(() => Math.floor(Math.random() * 15) + 5),
+                borderColor: '#F97316',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                tension: 0.4,
+                fill: true
+            }
+        ];
 
         this.salesChartData = {
             labels: months,
@@ -279,6 +332,38 @@ export class Dashboard implements OnInit {
                     beginAtZero: true
                 }
             }
+        };
+    }
+
+    private prepareDefaultCharts() {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        
+        this.stockChartData = {
+            labels: months,
+            datasets: [{
+                label: 'No Data',
+                data: [],
+                backgroundColor: '#6B7280'
+            }]
+        };
+
+        this.salesChartData = {
+            labels: months,
+            datasets: [{
+                label: 'No Data',
+                data: [],
+                borderColor: '#6B7280'
+            }]
+        };
+
+        this.stockChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false
+        };
+
+        this.salesChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false
         };
     }
 }

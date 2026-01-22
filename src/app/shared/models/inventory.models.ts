@@ -75,3 +75,24 @@ export interface KPIData {
     transfersInProgress: number;
     stockoutRiskAlerts: number;
 }
+
+// Column Mapping Models
+export interface ColumnMapping {
+    fileColumn: string;      // Column name in uploaded file
+    backendColumn: string;  // Column name in backend
+    required: boolean;        // Is this column required?
+}
+
+export interface FileMappingConfig {
+    fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product';
+    mappings: ColumnMapping[];
+}
+
+// Backend column definitions
+export const BACKEND_COLUMNS = {
+    stock: ['id_store', 'id_product', 'quantity'],
+    sales: ['id_store', 'id_product', 'quantity'],
+    transfer: ['date', 'id_store_sent', 'id_store_receive', 'id_product', 'reason', 'quantity'],
+    store: ['serial_number', 'name', 'city', 'type'],
+    product: ['code_barre', 'name', 'description']
+} as const;

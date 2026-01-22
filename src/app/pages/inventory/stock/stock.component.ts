@@ -5,7 +5,14 @@ import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
-import { Stock } from '../../../shared/models/inventory.models';
+
+interface StockData {
+    idStore: number;
+    idProduct: number;
+    quantity: number;
+    storeName?: string;
+    productName?: string;
+}
 
 @Component({
     selector: 'app-stock',
@@ -18,41 +25,40 @@ import { Stock } from '../../../shared/models/inventory.models';
                     <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Stock Overview</h1>
                     <p class="text-muted-color mb-6">Monitor inventory levels across all stores and warehouses.</p>
                     
-                    <p-table [value]="stockData" [paginator]="true" [rows]="20" [globalFilterFields]="['sku', 'storeName']" #dt>
+                    <p-table [value]="stockData" [paginator]="true" [rows]="20" [globalFilterFields]="['idProduct', 'storeName']" [loading]="loading" #dt>
                         <ng-template pTemplate="caption">
                             <div class="flex justify-between items-center">
                                 <span class="p-input-icon-left">
                                     <i class="pi pi-search"></i>
-                                    <input pInputText type="text" (input)="dt.filterGlobal($event.target, 'contains')" placeholder="Search by SKU or Store" />
+                                    <input pInputText type="text" (input)="dt.filterGlobal($event.target, 'contains')" placeholder="Search by Product ID or Store" />
                                 </span>
                             </div>
                         </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
-                                <th>Store</th>
-                                <th>SKU</th>
-                                <th>On Hand</th>
-                                <th>Reserved</th>
-                                <th>Available</th>
-                                <th>Reorder Point</th>
-                                <th>Safety Stock</th>
+                                <th>Store ID</th>
+                                <th>Product ID</th>
+                                <th>Quantity</th>
                                 <th>Status</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-stock>
                             <tr>
-                                <td>{{ stock.storeName }}</td>
-                                <td>{{ stock.sku }}</td>
-                                <td>{{ stock.onHand }}</td>
-                                <td>{{ stock.reserved }}</td>
-                                <td>{{ stock.onHand - stock.reserved }}</td>
-                                <td>{{ stock.reorderPoint }}</td>
-                                <td>{{ stock.safetyStock }}</td>
+                                <td>{{ stock.idStore }}</td>
+                                <td>{{ stock.idProduct }}</td>
+                                <td>{{ stock.quantity }}</td>
                                 <td>
                                     <app-status-pill 
                                         [status]="getStockStatus(stock)"
                                         [label]="getStockStatusLabel(stock)">
                                     </app-status-pill>
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-muted-color">
+                                    No stock data available. Upload stock files to view inventory levels.
                                 </td>
                             </tr>
                         </ng-template>
@@ -64,27 +70,52 @@ import { Stock } from '../../../shared/models/inventory.models';
 })
 export class StockComponent implements OnInit {
     private inventoryService = inject(InventoryDataService);
-    stockData: Array<Stock & { storeName: string }> = [];
+    stockData: StockData[] = [];
+    loading = false;
 
     ngOnInit() {
-        const stores = this.inventoryService.getStores();
-        const stocks = this.inventoryService.getStocks();
-        const storeMap = new Map(stores.map(s => [s.id, s.name]));
-
-        this.stockData = stocks.map(stock => ({
-            ...stock,
-            storeName: storeMap.get(stock.storeId) || 'Unknown'
-        }));
+        this.loadStockData();
     }
 
-    getStockStatus(stock: Stock): 'ok' | 'low' | 'out' {
-        const available = stock.onHand - stock.reserved;
-        if (available <= 0) return 'out';
-        if (available < stock.reorderPoint) return 'low';
+    private loadStockData(page: number = 0, size: number = 100) {
+        this.loading = true;
+        this.inventoryService.getStocks(undefined, undefined, page, size).subscribe({
+            next: (response) => {
+                if (response && response.content) {
+                    // Handle paginated response
+                    this.stockData = response.content.map((stock: any) => ({
+                        idStore: stock.idStore,
+                        idProduct: stock.idProduct,
+                        quantity: stock.quantity,
+                        storeName: `Store ${stock.idStore}`,
+                        productName: `Product ${stock.idProduct}`
+                    }));
+                } else if (Array.isArray(response)) {
+                    // Handle array response
+                    this.stockData = response.map((stock: any) => ({
+                        idStore: stock.idStore,
+                        idProduct: stock.idProduct,
+                        quantity: stock.quantity,
+                        storeName: `Store ${stock.idStore}`,
+                        productName: `Product ${stock.idProduct}`
+                    }));
+                }
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('Error loading stock data:', error);
+                this.loading = false;
+            }
+        });
+    }
+
+    getStockStatus(stock: StockData): 'ok' | 'low' | 'out' {
+        if (stock.quantity <= 0) return 'out';
+        if (stock.quantity < 10) return 'low'; // Threshold for low stock
         return 'ok';
     }
 
-    getStockStatusLabel(stock: Stock): string {
+    getStockStatusLabel(stock: StockData): string {
         const status = this.getStockStatus(stock);
         if (status === 'out') return 'Out of Stock';
         if (status === 'low') return 'Low Stock';

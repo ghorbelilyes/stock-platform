@@ -1,112 +1,145 @@
-import { Injectable } from '@angular/core';
-import { Store, Stock, Sale } from '../models/inventory.models';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map, catchError, throwError, of } from 'rxjs';
+import { Store, Stock, Sale, ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../models/inventory.models';
+import { API_CONFIG } from '../config/api.config';
 
-// TODO: Replace with backend API call
-// MOCK DATA UNTIL BACKEND READY
+interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message: string;
+    error?: {
+        code: string;
+        message: string;
+        details: string[];
+    };
+}
+
+interface ParseHeadersResponse {
+    headers: string[];
+    rowCount: number;
+}
+
+interface RequiredColumnsResponse {
+    fileType: string;
+    requiredColumns: string[];
+}
+
+interface ValidationResult {
+    valid: boolean;
+    errors: string[];
+    rowCount?: number;
+    validRows?: number;
+    invalidRows?: number;
+}
+
+interface ImportResult {
+    fileUploadId: number;
+    fileName: string;
+    fileType: string;
+    uploadedAt: string;
+    valid: boolean;
+    rowsProcessed: number;
+    rowsInserted: number;
+    rowsFailed: number;
+    errors: string[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class InventoryDataService {
-    private stores: Store[] = [];
-    private stocks: Stock[] = [];
-    private sales: Sale[] = [];
+    private http = inject(HttpClient);
+    private apiUrl = API_CONFIG.baseUrl;
+    
     private uploadedFiles: {
-        stores?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
-        stocks?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
-        sales?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
+        stores?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        stocks?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        sales?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        transfers?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        products?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
     } = {};
 
-    constructor() {
-        this.initializeMockData();
-    }
-
-    // MOCK DATA UNTIL BACKEND READY
-    private initializeMockData(): void {
-        // Seed 6 stores (4 stores + 2 warehouses)
-        this.stores = [
-            { id: 'store-1', name: 'Downtown Store', city: 'New York', type: 'store', leadTimeDays: 2 },
-            { id: 'store-2', name: 'Northside Store', city: 'Chicago', type: 'store', leadTimeDays: 3 },
-            { id: 'store-3', name: 'Westside Store', city: 'Los Angeles', type: 'store', leadTimeDays: 2 },
-            { id: 'store-4', name: 'Uptown Store', city: 'Miami', type: 'store', leadTimeDays: 4 },
-            { id: 'warehouse-1', name: 'East Warehouse', city: 'Newark', type: 'warehouse', leadTimeDays: 1 },
-            { id: 'warehouse-2', name: 'Central Warehouse', city: 'Dallas', type: 'warehouse', leadTimeDays: 1 }
-        ];
-
-        // Seed 50 SKUs with realistic stock data
-        const skus = [
-            'SKU-001', 'SKU-002', 'SKU-003', 'SKU-004', 'SKU-005',
-            'SKU-006', 'SKU-007', 'SKU-008', 'SKU-009', 'SKU-010',
-            'SKU-011', 'SKU-012', 'SKU-013', 'SKU-014', 'SKU-015',
-            'SKU-016', 'SKU-017', 'SKU-018', 'SKU-019', 'SKU-020',
-            'SKU-021', 'SKU-022', 'SKU-023', 'SKU-024', 'SKU-025',
-            'SKU-026', 'SKU-027', 'SKU-028', 'SKU-029', 'SKU-030',
-            'SKU-031', 'SKU-032', 'SKU-033', 'SKU-034', 'SKU-035',
-            'SKU-036', 'SKU-037', 'SKU-038', 'SKU-039', 'SKU-040',
-            'SKU-041', 'SKU-042', 'SKU-043', 'SKU-044', 'SKU-045',
-            'SKU-046', 'SKU-047', 'SKU-048', 'SKU-049', 'SKU-050'
-        ];
-
-        this.stocks = [];
-        this.stores.forEach(store => {
-            skus.forEach(sku => {
-                const onHand = Math.floor(Math.random() * 200) + 10;
-                const reorderPoint = Math.floor(onHand * 0.3);
-                const safetyStock = Math.floor(onHand * 0.2);
-                this.stocks.push({
-                    storeId: store.id,
-                    sku,
-                    onHand,
-                    reserved: Math.floor(Math.random() * 20),
-                    reorderPoint,
-                    safetyStock
-                });
-            });
+    // Get all stores (if store endpoint exists, otherwise return empty)
+    getStores(): Observable<Store[]> {
+        // Note: Store endpoint not implemented in backend yet
+        // Return empty array for now
+        return new Observable(observer => {
+            observer.next([]);
+            observer.complete();
         });
+    }
 
-        // Seed sales data for last 6 months
-        const today = new Date();
-        for (let month = 0; month < 6; month++) {
-            const date = new Date(today.getFullYear(), today.getMonth() - month, 1);
-            this.stores.forEach(store => {
-                if (store.type === 'store') {
-                    skus.slice(0, 30).forEach(sku => {
-                        for (let day = 0; day < 30; day++) {
-                            if (Math.random() > 0.7) { // 30% chance of sale per day
-                                this.sales.push({
-                                    storeId: store.id,
-                                    sku,
-                                    date: new Date(date.getFullYear(), date.getMonth(), day).toISOString(),
-                                    qtySold: Math.floor(Math.random() * 5) + 1,
-                                    price: Math.floor(Math.random() * 100) + 10
-                                });
-                            }
-                        }
-                    });
-                }
-            });
+    // Get stocks with optional filters
+    getStocks(storeId?: number, productId?: number, page: number = 0, size: number = 20): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
+        
+        if (storeId) {
+            params = params.set('storeId', storeId.toString());
         }
+        if (productId) {
+            params = params.set('productId', productId.toString());
+        }
+
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.stocks}`, { params })
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error fetching stocks:', error);
+                    return throwError(() => error);
+                })
+            );
     }
 
-    // TODO: Replace with HttpClient GET call
-    getStores(): Store[] {
-        return [...this.stores];
+    // Get sales with optional filters
+    getSales(storeId?: number, productId?: number, startDate?: string, endDate?: string, page: number = 0, size: number = 20): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
+        
+        if (storeId) {
+            params = params.set('storeId', storeId.toString());
+        }
+        if (productId) {
+            params = params.set('productId', productId.toString());
+        }
+        if (startDate) {
+            params = params.set('startDate', startDate);
+        }
+        if (endDate) {
+            params = params.set('endDate', endDate);
+        }
+
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.sales}`, { params })
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error fetching sales:', error);
+                    return throwError(() => error);
+                })
+            );
     }
 
-    // TODO: Replace with HttpClient GET call
-    getStocks(): Stock[] {
-        return [...this.stocks];
+    // Get all products
+    getProducts(): Observable<any[]> {
+        return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.products}`)
+            .pipe(
+                map(response => response.data || []),
+                catchError(error => {
+                    console.error('Error fetching products:', error);
+                    return throwError(() => error);
+                })
+            );
     }
 
-    // TODO: Replace with HttpClient GET call
-    getSales(): Sale[] {
-        return [...this.sales];
-    }
-
-    // TODO: Replace with HttpClient POST call
     setUploadedFilesState(files: {
-        stores?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
-        stocks?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
-        sales?: { name: string; uploadedAt: string; valid: boolean; errors?: string[] };
+        stores?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        stocks?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        sales?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        transfers?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
+        products?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
     }): void {
         this.uploadedFiles = files;
     }
@@ -115,31 +148,147 @@ export class InventoryDataService {
         return { ...this.uploadedFiles };
     }
 
-    // TODO: Replace with backend validation
-    validateFilesMock(fileType: 'stores' | 'stocks' | 'sales', file: File): Promise<{ valid: boolean; errors?: string[] }> {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const errors: string[] = [];
-                
-                // Check file extension
-                const fileName = file.name.toLowerCase();
-                if (!fileName.endsWith('.csv')) {
-                    errors.push(`Invalid file type, allowed file types: .CSV`);
-                    resolve({ valid: false, errors });
-                    return;
+    // Parse CSV headers using backend API
+    async parseCSVHeaders(file: File): Promise<string[]> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await this.http.post<ApiResponse<ParseHeadersResponse>>(
+                `${this.apiUrl}${API_CONFIG.endpoints.parseHeaders}`,
+                formData
+            ).toPromise();
+
+            if (response?.success && response.data) {
+                return response.data.headers;
+            } else {
+                throw new Error(response?.error?.message || 'Failed to parse headers');
+            }
+        } catch (error: any) {
+            console.error('Error parsing CSV headers:', error);
+            // Fallback to client-side parsing if API fails
+            return this.parseCSVHeadersClientSide(file);
+        }
+    }
+
+    // Client-side fallback for parsing headers
+    private parseCSVHeadersClientSide(file: File): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e: any) => {
+                try {
+                    const text = e.target.result as string;
+                    const lines = text.split('\n');
+                    if (lines.length > 0) {
+                        const headers = lines[0]
+                            .split(/[,;]/)
+                            .map(h => h.trim().replace(/^["']|["']$/g, ''));
+                        resolve(headers);
+                    } else {
+                        reject(new Error('Empty file'));
+                    }
+                } catch (error) {
+                    reject(error);
                 }
-                
-                // Mock validation - 90% success rate for valid CSV files
-                if (Math.random() > 0.1) {
-                    resolve({ valid: true });
-                } else {
-                    errors.push('Missing required column: store_id', 'Invalid date format in row 15');
-                    resolve({
-                        valid: false,
-                        errors
-                    });
-                }
-            }, 1000);
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
         });
+    }
+
+    // Get required columns from backend
+    getRequiredColumns(fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product'): Observable<string[]> {
+        const fileTypeUpper = fileType.toUpperCase();
+        return this.http.get<ApiResponse<RequiredColumnsResponse>>(
+            `${this.apiUrl}${API_CONFIG.endpoints.requiredColumns}/${fileTypeUpper}`
+        ).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data.requiredColumns;
+                }
+                // Fallback to local constant
+                return [...BACKEND_COLUMNS[fileType]];
+            }),
+            catchError(error => {
+                console.error('Error fetching required columns:', error);
+                // Fallback to local constant
+                return of([...BACKEND_COLUMNS[fileType]]);
+            })
+        );
+    }
+
+    // Validate file with column mapping
+    validateFile(file: File, fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product', columnMapping: FileMappingConfig): Observable<ValidationResult> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileType', fileType.toUpperCase());
+        
+        // Convert fileType in columnMapping to uppercase for backend enum
+        const columnMappingForBackend = {
+            ...columnMapping,
+            fileType: columnMapping.fileType.toUpperCase()
+        };
+        formData.append('columnMapping', JSON.stringify(columnMappingForBackend));
+
+        return this.http.post<ApiResponse<ValidationResult>>(
+            `${this.apiUrl}${API_CONFIG.endpoints.validateFile}`,
+            formData
+        ).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data;
+                }
+                return { valid: false, errors: [response.error?.message || 'Validation failed'] };
+            }),
+            catchError(error => {
+                console.error('Error validating file:', error);
+                return throwError(() => ({
+                    valid: false,
+                    errors: [error.error?.error?.message || 'Validation error occurred']
+                }));
+            })
+        );
+    }
+
+    // Upload and import file
+    uploadFile(file: File, fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product', columnMapping: FileMappingConfig): Observable<ImportResult> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileType', fileType.toUpperCase());
+        
+        // Convert fileType in columnMapping to uppercase for backend enum
+        const columnMappingForBackend = {
+            ...columnMapping,
+            fileType: columnMapping.fileType.toUpperCase()
+        };
+        formData.append('columnMapping', JSON.stringify(columnMappingForBackend));
+
+        return this.http.post<ApiResponse<ImportResult>>(
+            `${this.apiUrl}${API_CONFIG.endpoints.uploadFile}`,
+            formData
+        ).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data;
+                }
+                throw new Error(response.error?.message || 'Upload failed');
+            }),
+            catchError(error => {
+                console.error('Error uploading file:', error);
+                return throwError(() => error);
+            })
+        );
+    }
+
+    // Save column mapping configuration (local storage)
+    saveColumnMapping(fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product', mapping: FileMappingConfig): void {
+        const fileKey = fileType === 'stock' ? 'stocks' : 
+                       fileType === 'sales' ? 'sales' : 
+                       fileType === 'transfer' ? 'transfers' : 
+                       fileType === 'product' ? 'products' :
+                       'stores';
+        if (this.uploadedFiles[fileKey]) {
+            this.uploadedFiles[fileKey]!.columnMapping = mapping;
+        }
     }
 }
