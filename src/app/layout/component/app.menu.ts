@@ -19,6 +19,8 @@ export class AppMenu {
     model: MenuItem[] = [];
 
     ngOnInit() {
+        // OLD MENU - COMMENTED OUT (keeping for reference)
+        /*
         this.model = [
             {
                 label: 'Home',
@@ -149,6 +151,67 @@ export class AppMenu {
                         icon: 'pi pi-fw pi-github',
                         url: 'https://github.com/primefaces/sakai-ng',
                         target: '_blank'
+                    }
+                ]
+            }
+        ];
+        */
+
+        // NEW MENU - Intelligent Inventory Orchestrator
+        this.model = [
+            {
+                label: 'Home',
+                items: [
+                    { 
+                        label: 'Dashboard', 
+                        icon: 'pi pi-fw pi-home', 
+                        routerLink: ['/'] 
+                    }
+                ]
+            },
+            {
+                label: 'Inventory',
+                icon: 'pi pi-fw pi-box',
+                items: [
+                    {
+                        label: 'Upload Data',
+                        icon: 'pi pi-fw pi-cloud-upload',
+                        routerLink: ['/inventory/upload']
+                    },
+                    {
+                        label: 'Stores',
+                        icon: 'pi pi-fw pi-building',
+                        routerLink: ['/inventory/stores']
+                    },
+                    {
+                        label: 'Products',
+                        icon: 'pi pi-fw pi-shopping-bag',
+                        routerLink: ['/inventory/products']
+                    },
+                    {
+                        label: 'Stock Overview',
+                        icon: 'pi pi-fw pi-box',
+                        routerLink: ['/inventory/stock']
+                    },
+                    {
+                        label: 'Sales Analysis',
+                        icon: 'pi pi-fw pi-chart-bar',
+                        routerLink: ['/inventory/sales']
+                    },
+                    {
+                        label: 'Transfer Suggestions',
+                        icon: 'pi pi-fw pi-arrows-h',
+                        routerLink: ['/inventory/transfers']
+                    },
+                    {
+                        label: 'Reports',
+                        icon: 'pi pi-fw pi-file',
+                        routerLink: ['/inventory/reports']
+                    },
+                    {
+                        label: 'Settings',
+                        icon: 'pi pi-fw pi-cog',
+                        routerLink: ['/inventory/settings']
                     }
                 ]
             }
