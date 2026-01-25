@@ -1,5 +1,6 @@
 package com.inventory.orchestrator.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -9,6 +10,7 @@ public class Sales {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Long id;
     
     @Column(name = "range_date", nullable = false)
@@ -34,8 +36,7 @@ public class Sales {
     public Sales() {
     }
     
-    public Sales(Long id, LocalDate rangeDate, Long idStore, Long idProduct, Integer quantity) {
-        this.id = id;
+    public Sales(LocalDate rangeDate, Long idStore, Long idProduct, Integer quantity) {
         this.rangeDate = rangeDate;
         this.idStore = idStore;
         this.idProduct = idProduct;

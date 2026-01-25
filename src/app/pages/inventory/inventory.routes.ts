@@ -6,6 +6,8 @@ export default [
     { path: 'stock', loadComponent: () => import('./stock/stock.component').then(m => m.StockComponent) },
     { path: 'sales', loadComponent: () => import('./sales/sales.component').then(m => m.SalesComponent) },
     { path: 'transfers', loadComponent: () => import('./transfers/transfers.component').then(m => m.TransfersComponent) },
+    { path: 'stores', loadComponent: () => import('./stores/stores.component').then(m => m.StoresComponent) },
+    { path: 'products', loadComponent: () => import('./products/products.component').then(m => m.ProductsComponent) },
     { path: 'reports', loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent) },
     { path: 'settings', loadComponent: () => import('./settings/settings.component').then(m => m.SettingsComponent) },
     { path: '**', redirectTo: '/notfound' }

@@ -170,6 +170,13 @@ public class DataImportService {
                     continue;
                 }
                 
+                // Check if store and product exist
+                if (!storeRepository.existsById(idStore)) {
+                    result.getErrors().add("Row " + rowNumber + ": Store ID " + idStore + " does not exist");
+                    result.setRowsFailed(result.getRowsFailed() + 1);
+                    continue;
+                }
+                
                 // Check if product exists
                 if (!productRepository.existsById(idProduct)) {
                     result.getErrors().add("Row " + rowNumber + ": Product ID " + idProduct + " does not exist");
@@ -320,10 +327,17 @@ public class DataImportService {
             try {
                 Map<String, Object> transformedRow = columnMappingService.transformRow(csvRow, mappingConfig);
                 
+                Long id = getLongValue(transformedRow, "id");
                 String serialNumber = getStringValue(transformedRow, "serial_number");
                 String name = getStringValue(transformedRow, "name");
                 String city = getStringValue(transformedRow, "city");
                 String type = getStringValue(transformedRow, "type");
+                
+                if (id == null) {
+                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
+                    result.setRowsFailed(result.getRowsFailed() + 1);
+                    continue;
+                }
                 
                 // Validate serial number (required and unique)
                 if (serialNumber == null || serialNumber.trim().isEmpty()) {
@@ -334,16 +348,17 @@ public class DataImportService {
                 
                 serialNumber = serialNumber.trim();
                 
-                // Check if store with this serial number already exists
-                java.util.Optional<Store> existingStoreOpt = storeRepository.findBySerialNumber(serialNumber);
+                // Check if store with this ID already exists
+                java.util.Optional<Store> existingStoreOpt = storeRepository.findById(id);
                 Store store;
                 
                 if (existingStoreOpt.isPresent()) {
                     // Update existing store
                     store = existingStoreOpt.get();
                 } else {
-                    // Create new store
+                    // Create new store with client-provided ID
                     store = new Store();
+                    store.setId(id);
                     store.setSerialNumber(serialNumber);
                 }
                 
@@ -434,9 +449,16 @@ public class DataImportService {
             try {
                 Map<String, Object> transformedRow = columnMappingService.transformRow(csvRow, mappingConfig);
                 
+                Long id = getLongValue(transformedRow, "id");
                 String codeBarre = getStringValue(transformedRow, "code_barre");
                 String name = getStringValue(transformedRow, "name");
                 String description = getStringValue(transformedRow, "description");
+                
+                if (id == null) {
+                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
+                    result.setRowsFailed(result.getRowsFailed() + 1);
+                    continue;
+                }
                 
                 // Validate code_barre (required and unique)
                 if (codeBarre == null || codeBarre.trim().isEmpty()) {
@@ -447,16 +469,17 @@ public class DataImportService {
                 
                 codeBarre = codeBarre.trim();
                 
-                // Check if product with this code_barre already exists
-                java.util.Optional<Product> existingProductOpt = productRepository.findByCodeBarre(codeBarre);
+                // Check if product with this ID already exists
+                java.util.Optional<Product> existingProductOpt = productRepository.findById(id);
                 Product product;
                 
                 if (existingProductOpt.isPresent()) {
                     // Update existing product
                     product = existingProductOpt.get();
                 } else {
-                    // Create new product
+                    // Create new product with client-provided ID
                     product = new Product();
+                    product.setId(id);
                     product.setCodeBarre(codeBarre);
                 }
                 

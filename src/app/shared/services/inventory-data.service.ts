@@ -60,27 +60,94 @@ export class InventoryDataService {
         products?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
     } = {};
 
-    // Get all stores (if store endpoint exists, otherwise return empty)
-    getStores(): Observable<Store[]> {
-        // Note: Store endpoint not implemented in backend yet
-        // Return empty array for now
-        return new Observable(observer => {
-            observer.next([]);
-            observer.complete();
-        });
-    }
-
-    // Get stocks with optional filters
-    getStocks(storeId?: number, productId?: number, page: number = 0, size: number = 20): Observable<any> {
+    // Get all stores with pagination, sorting, filtering, and search
+    getStores(
+        page: number = 0, 
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            name?: string;
+            serialNumber?: string;
+            city?: string;
+            type?: string;
+        }
+    ): Observable<any> {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('size', size.toString());
-        
-        if (storeId) {
-            params = params.set('storeId', storeId.toString());
+
+        if (sort) {
+            params = params.set('sort', sort);
         }
-        if (productId) {
-            params = params.set('productId', productId.toString());
+
+        if (search) {
+            params = params.set('search', search);
+        }
+
+        if (filters) {
+            if (filters.name) {
+                params = params.set('name', filters.name);
+            }
+            if (filters.serialNumber) {
+                params = params.set('serialNumber', filters.serialNumber);
+            }
+            if (filters.city) {
+                params = params.set('city', filters.city);
+            }
+            if (filters.type) {
+                params = params.set('type', filters.type);
+            }
+        }
+
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.stores}`, { params })
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error fetching stores:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Get stocks with pagination, sorting, filtering, and search
+    getStocks(
+        page: number = 0, 
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            storeName?: string;
+            productName?: string;
+            city?: string;
+            type?: string;
+        }
+    ): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
+
+        if (sort) {
+            params = params.set('sort', sort);
+        }
+
+        if (search) {
+            params = params.set('search', search);
+        }
+
+        if (filters) {
+            if (filters.storeName) {
+                params = params.set('storeName', filters.storeName);
+            }
+            if (filters.productName) {
+                params = params.set('productName', filters.productName);
+            }
+            if (filters.city) {
+                params = params.set('city', filters.city);
+            }
+            if (filters.type) {
+                params = params.set('type', filters.type);
+            }
         }
 
         return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.stocks}`, { params })
@@ -93,23 +160,48 @@ export class InventoryDataService {
             );
     }
 
-    // Get sales with optional filters
-    getSales(storeId?: number, productId?: number, startDate?: string, endDate?: string, page: number = 0, size: number = 20): Observable<any> {
+    // Get sales with pagination, sorting, filtering, and search
+    getSales(
+        page: number = 0, 
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            storeName?: string;
+            productName?: string;
+            city?: string;
+            startDate?: string;
+            endDate?: string;
+        }
+    ): Observable<any> {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('size', size.toString());
-        
-        if (storeId) {
-            params = params.set('storeId', storeId.toString());
+
+        if (sort) {
+            params = params.set('sort', sort);
         }
-        if (productId) {
-            params = params.set('productId', productId.toString());
+
+        if (search) {
+            params = params.set('search', search);
         }
-        if (startDate) {
-            params = params.set('startDate', startDate);
-        }
-        if (endDate) {
-            params = params.set('endDate', endDate);
+
+        if (filters) {
+            if (filters.storeName) {
+                params = params.set('storeName', filters.storeName);
+            }
+            if (filters.productName) {
+                params = params.set('productName', filters.productName);
+            }
+            if (filters.city) {
+                params = params.set('city', filters.city);
+            }
+            if (filters.startDate) {
+                params = params.set('startDate', filters.startDate);
+            }
+            if (filters.endDate) {
+                params = params.set('endDate', filters.endDate);
+            }
         }
 
         return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.sales}`, { params })
@@ -122,11 +214,45 @@ export class InventoryDataService {
             );
     }
 
-    // Get all products
-    getProducts(): Observable<any[]> {
-        return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.products}`)
+    // Get all products with pagination, sorting, filtering, and search
+    getProducts(
+        page: number = 0, 
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            name?: string;
+            codeBarre?: string;
+            description?: string;
+        }
+    ): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
+
+        if (sort) {
+            params = params.set('sort', sort);
+        }
+
+        if (search) {
+            params = params.set('search', search);
+        }
+
+        if (filters) {
+            if (filters.name) {
+                params = params.set('name', filters.name);
+            }
+            if (filters.codeBarre) {
+                params = params.set('codeBarre', filters.codeBarre);
+            }
+            if (filters.description) {
+                params = params.set('description', filters.description);
+            }
+        }
+
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.products}`, { params })
             .pipe(
-                map(response => response.data || []),
+                map(response => response.data),
                 catchError(error => {
                     console.error('Error fetching products:', error);
                     return throwError(() => error);

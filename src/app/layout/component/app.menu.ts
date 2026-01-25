@@ -179,6 +179,16 @@ export class AppMenu {
                         routerLink: ['/inventory/upload']
                     },
                     {
+                        label: 'Stores',
+                        icon: 'pi pi-fw pi-building',
+                        routerLink: ['/inventory/stores']
+                    },
+                    {
+                        label: 'Products',
+                        icon: 'pi pi-fw pi-shopping-bag',
+                        routerLink: ['/inventory/products']
+                    },
+                    {
                         label: 'Stock Overview',
                         icon: 'pi pi-fw pi-box',
                         routerLink: ['/inventory/stock']

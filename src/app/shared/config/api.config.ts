@@ -8,6 +8,7 @@ export const API_CONFIG = {
         uploadFile: '/files/upload',
         
         // Data retrieval
+        stores: '/stores',
         products: '/products',
         stocks: '/stocks',
         sales: '/sales',

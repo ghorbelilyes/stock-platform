@@ -1,7 +1,7 @@
 package com.inventory.orchestrator.controller;
 
 import com.inventory.orchestrator.dto.ApiResponse;
-import com.inventory.orchestrator.entity.Sales;
+import com.inventory.orchestrator.dto.SalesView;
 import com.inventory.orchestrator.repository.SalesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,7 +27,7 @@ public class SalesController {
     }
     
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<Sales>>> getAllSales(
+    public ResponseEntity<ApiResponse<Page<SalesView>>> getAllSales(
         @RequestParam(required = false) Long storeId,
         @RequestParam(required = false) Long productId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -36,21 +36,18 @@ public class SalesController {
         @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Sales> sales;
+        Page<SalesView> sales;
         
         if (storeId != null && startDate != null && endDate != null) {
-            sales = salesRepository.findByStoreAndDateRange(storeId, startDate, endDate, pageable);
+            sales = salesRepository.findByStoreAndDateRangeView(storeId, startDate, endDate, pageable);
         } else if (storeId != null) {
-            List<Sales> salesList = salesRepository.findByIdStore(storeId);
-            sales = new org.springframework.data.domain.PageImpl<>(salesList, pageable, salesList.size());
+            sales = salesRepository.findByIdStoreView(storeId, pageable);
         } else if (productId != null) {
-            List<Sales> salesList = salesRepository.findByIdProduct(productId);
-            sales = new org.springframework.data.domain.PageImpl<>(salesList, pageable, salesList.size());
+            sales = salesRepository.findByIdProductView(productId, pageable);
         } else if (startDate != null && endDate != null) {
-            List<Sales> salesList = salesRepository.findByRangeDateBetween(startDate, endDate);
-            sales = new org.springframework.data.domain.PageImpl<>(salesList, pageable, salesList.size());
+            sales = salesRepository.findByRangeDateBetweenView(startDate, endDate, pageable);
         } else {
-            sales = salesRepository.findAll(pageable);
+            sales = salesRepository.findAllViews(pageable);
         }
         
         return ResponseEntity.ok(ApiResponse.success(sales, "Sales retrieved successfully"));

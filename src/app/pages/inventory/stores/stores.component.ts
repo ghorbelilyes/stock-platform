@@ -5,46 +5,35 @@ import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
-import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
 
-interface StockData {
-    idStore: number;
-    idProduct: number;
-    quantity: number;
-    store?: {
-        id: number;
-        name: string;
-        city: string;
-        type: string;
-        serialNumber: string;
-    };
-    product?: {
-        id: number;
-        name: string;
-        codeBarre: string;
-        description?: string;
-    };
+interface StoreData {
+    id: number;
+    serialNumber: string;
+    name: string;
+    city: string;
+    type: string;
+    leadTimeDays?: number;
 }
 
 @Component({
-    selector: 'app-stock',
+    selector: 'app-stores',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, TagModule, InputTextModule, StatusPillComponent],
+    imports: [CommonModule, FormsModule, TableModule, TagModule, InputTextModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Stock Overview</h1>
-                    <p class="text-muted-color mb-6">Monitor inventory levels across all stores and warehouses with pagination, sorting, filtering, and search.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Stores & Warehouses</h1>
+                    <p class="text-muted-color mb-6">Manage all stores and warehouses in your inventory system with pagination, sorting, filtering, and search.</p>
                     
                     <p-table 
-                        [value]="stockData" 
+                        [value]="storesData" 
                         [paginator]="true" 
-                        [rows]="pageSize" 
+                        [rows]="pageSize"
                         [totalRecords]="totalRecords"
                         [lazy]="true"
-                        (onLazyLoad)="loadStockDataLazy($event)"
-                        [globalFilterFields]="['store.name', 'store.city', 'store.type', 'product.name']" 
+                        (onLazyLoad)="loadStoresDataLazy($event)"
+                        [globalFilterFields]="['name', 'city', 'type', 'serialNumber']" 
                         [loading]="loading"
                         [sortMode]="'single'"
                         [sortField]="currentSortField"
@@ -63,7 +52,7 @@ interface StockData {
                                         type="text" 
                                         [(ngModel)]="globalSearch"
                                         (input)="onGlobalSearch($event)"
-                                        placeholder="Search by Store, Product, or City" 
+                                        placeholder="Search by Name, City, Type, or Serial Number" 
                                         class="w-full"
                                     />
                                 </span>
@@ -71,76 +60,69 @@ interface StockData {
                         </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
-                                <th [pSortableColumn]="'store.name'">
+                                <th [pSortableColumn]="'serialNumber'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Store Name</span>
-                                            <p-sortIcon [field]="'store.name'"></p-sortIcon>
+                                            <span>Serial Number</span>
+                                            <p-sortIcon [field]="'serialNumber'"></p-sortIcon>
                                         </div>
-                                        <p-columnFilter type="text" field="store.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
+                                        <p-columnFilter type="text" field="serialNumber" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
                                     </div>
                                 </th>
-                                <th [pSortableColumn]="'store.city'">
+                                <th [pSortableColumn]="'name'">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span>Name</span>
+                                            <p-sortIcon [field]="'name'"></p-sortIcon>
+                                        </div>
+                                        <p-columnFilter type="text" field="name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
+                                    </div>
+                                </th>
+                                <th [pSortableColumn]="'city'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
                                             <span>City</span>
-                                            <p-sortIcon [field]="'store.city'"></p-sortIcon>
+                                            <p-sortIcon [field]="'city'"></p-sortIcon>
                                         </div>
-                                        <p-columnFilter type="text" field="store.city" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
+                                        <p-columnFilter type="text" field="city" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
                                     </div>
                                 </th>
-                                <th [pSortableColumn]="'store.type'">
+                                <th [pSortableColumn]="'type'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
                                             <span>Type</span>
-                                            <p-sortIcon [field]="'store.type'"></p-sortIcon>
+                                            <p-sortIcon [field]="'type'"></p-sortIcon>
                                         </div>
-                                        <p-columnFilter type="text" field="store.type" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
+                                        <p-columnFilter type="text" field="type" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
                                     </div>
                                 </th>
-                                <th [pSortableColumn]="'product.name'">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <span>Product Name</span>
-                                            <p-sortIcon [field]="'product.name'"></p-sortIcon>
-                                        </div>
-                                        <p-columnFilter type="text" field="product.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
-                                    </div>
-                                </th>
-                                <th [pSortableColumn]="'quantity'">
+                                <th [pSortableColumn]="'leadTimeDays'">
                                     <div class="flex items-center gap-2">
-                                        <span>Quantity</span>
-                                        <p-sortIcon [field]="'quantity'"></p-sortIcon>
+                                        <span>Lead Time (Days)</span>
+                                        <p-sortIcon [field]="'leadTimeDays'"></p-sortIcon>
                                     </div>
                                 </th>
-                                <th>Status</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="6" class="text-center py-8 text-muted-color">
+                                <td colspan="5" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
-                                        <p class="mb-2">No stock data found.</p>
+                                        <p class="mb-2">No stores found.</p>
                                         <p class="text-sm" *ngIf="globalSearch">Try adjusting your search query.</p>
                                     </div>
                                 </td>
                             </tr>
                         </ng-template>
-                        <ng-template pTemplate="body" let-stock>
+                        <ng-template pTemplate="body" let-store>
                             <tr>
-                                <td>{{ stock.store?.name || 'N/A' }}</td>
-                                <td>{{ stock.store?.city || 'N/A' }}</td>
+                                <td>{{ store.serialNumber }}</td>
+                                <td>{{ store.name }}</td>
+                                <td>{{ store.city }}</td>
                                 <td>
-                                    <p-tag [value]="stock.store?.type || 'N/A'" [severity]="getStoreTypeSeverity(stock.store?.type)"></p-tag>
+                                    <p-tag [value]="store.type || 'N/A'" [severity]="getStoreTypeSeverity(store.type)"></p-tag>
                                 </td>
-                                <td>{{ stock.product?.name || 'N/A' }}</td>
-                                <td>{{ stock.quantity }}</td>
-                                <td>
-                                    <app-status-pill 
-                                        [status]="getStockStatus(stock)"
-                                        [label]="getStockStatusLabel(stock)">
-                                    </app-status-pill>
-                                </td>
+                                <td>{{ store.leadTimeDays ?? 'N/A' }}</td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -149,16 +131,16 @@ interface StockData {
         </div>
     `
 })
-export class StockComponent implements OnInit {
+export class StoresComponent implements OnInit {
     private inventoryService = inject(InventoryDataService);
-    stockData: StockData[] = [];
+    storesData: StoreData[] = [];
     loading = false;
     totalRecords = 0;
     pageSize = 20;
     
     // Search and sort state
     globalSearch: string = '';
-    currentSortField: string = 'idStore';
+    currentSortField: string = 'id';
     currentSortOrder: number = 1;
     tableFilters: { [key: string]: any } = {};
 
@@ -166,51 +148,45 @@ export class StockComponent implements OnInit {
         // Initial load will be triggered by lazy load
     }
 
-    loadStockDataLazy(event: TableLazyLoadEvent) {
+    loadStoresDataLazy(event: TableLazyLoadEvent) {
         this.loading = true;
         const page = event.first && event.rows ? Math.floor(event.first / event.rows) : 0;
         const size = event.rows || this.pageSize;
         
         this.pageSize = size;
 
-        // Build sort parameter - map nested fields to backend fields
+        // Build sort parameter
         let sortParam: string | undefined;
         if (event.sortField) {
-            let sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
-            // Map nested fields to backend fields
-            if (sortField === 'store.name') sortField = 'storeName';
-            else if (sortField === 'product.name') sortField = 'productName';
-            else if (sortField === 'store.city') sortField = 'city';
-            else if (sortField === 'store.type') sortField = 'type';
-            
+            const sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
             const sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
             sortParam = `${sortField},${sortOrder}`;
-            this.currentSortField = event.sortField as string;
+            this.currentSortField = sortField;
             this.currentSortOrder = event.sortOrder || 1;
         } else {
             sortParam = `${this.currentSortField},${this.currentSortOrder === 1 ? 'asc' : 'desc'}`;
         }
 
-        // Build filters from column filters - map nested fields
-        const filters: { storeName?: string; productName?: string; city?: string; type?: string } = {};
+        // Build filters from column filters
+        const filters: { name?: string; serialNumber?: string; city?: string; type?: string } = {};
         if (event.filters) {
             this.tableFilters = { ...event.filters };
             
-            const storeNameFilter = event.filters['store.name'];
-            const productNameFilter = event.filters['product.name'];
-            const cityFilter = event.filters['store.city'];
-            const typeFilter = event.filters['store.type'];
+            const nameFilter = event.filters['name'];
+            const serialNumberFilter = event.filters['serialNumber'];
+            const cityFilter = event.filters['city'];
+            const typeFilter = event.filters['type'];
             
-            if (storeNameFilter) {
-                const filterValue = Array.isArray(storeNameFilter) ? storeNameFilter[0] : storeNameFilter;
+            if (nameFilter) {
+                const filterValue = Array.isArray(nameFilter) ? nameFilter[0] : nameFilter;
                 if (filterValue && filterValue.value !== null && filterValue.value !== undefined && filterValue.value !== '') {
-                    filters.storeName = String(filterValue.value).trim();
+                    filters.name = String(filterValue.value).trim();
                 }
             }
-            if (productNameFilter) {
-                const filterValue = Array.isArray(productNameFilter) ? productNameFilter[0] : productNameFilter;
+            if (serialNumberFilter) {
+                const filterValue = Array.isArray(serialNumberFilter) ? serialNumberFilter[0] : serialNumberFilter;
                 if (filterValue && filterValue.value !== null && filterValue.value !== undefined && filterValue.value !== '') {
-                    filters.productName = String(filterValue.value).trim();
+                    filters.serialNumber = String(filterValue.value).trim();
                 }
             }
             if (cityFilter) {
@@ -230,36 +206,38 @@ export class StockComponent implements OnInit {
         const searchTerm = this.globalSearch?.trim() || undefined;
         const filterParams = Object.keys(filters).length > 0 && !searchTerm ? filters : undefined;
 
-        this.inventoryService.getStocks(page, size, sortParam, searchTerm, filterParams).subscribe({
+        this.inventoryService.getStores(page, size, sortParam, searchTerm, filterParams).subscribe({
             next: (response) => {
                 if (response && response.content) {
-                    this.stockData = response.content.map((stock: any) => ({
-                        idStore: stock.idStore,
-                        idProduct: stock.idProduct,
-                        quantity: stock.quantity,
-                        store: stock.store,
-                        product: stock.product
+                    this.storesData = response.content.map((store: any) => ({
+                        id: store.id,
+                        serialNumber: store.serialNumber,
+                        name: store.name,
+                        city: store.city,
+                        type: store.type,
+                        leadTimeDays: store.leadTimeDays
                     }));
                     this.totalRecords = response.totalElements || 0;
                 } else if (Array.isArray(response)) {
-                    this.stockData = response.map((stock: any) => ({
-                        idStore: stock.idStore,
-                        idProduct: stock.idProduct,
-                        quantity: stock.quantity,
-                        store: stock.store,
-                        product: stock.product
+                    this.storesData = response.map((store: any) => ({
+                        id: store.id,
+                        serialNumber: store.serialNumber,
+                        name: store.name,
+                        city: store.city,
+                        type: store.type,
+                        leadTimeDays: store.leadTimeDays
                     }));
                     this.totalRecords = response.length;
                 } else {
-                    this.stockData = [];
+                    this.storesData = [];
                     this.totalRecords = 0;
                 }
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error loading stock data:', error);
+                console.error('Error loading stores data:', error);
                 this.loading = false;
-                this.stockData = [];
+                this.storesData = [];
                 this.totalRecords = 0;
             }
         });
@@ -273,7 +251,7 @@ export class StockComponent implements OnInit {
             sortOrder: this.currentSortOrder,
             filters: this.tableFilters
         };
-        this.loadStockDataLazy(lazyEvent);
+        this.loadStoresDataLazy(lazyEvent);
     }
 
     onSort(event: any) {
@@ -286,7 +264,7 @@ export class StockComponent implements OnInit {
             sortOrder: event.order,
             filters: this.tableFilters
         };
-        this.loadStockDataLazy(lazyEvent);
+        this.loadStoresDataLazy(lazyEvent);
     }
 
     onFilter(event: any) {
@@ -297,20 +275,7 @@ export class StockComponent implements OnInit {
             sortOrder: this.currentSortOrder,
             filters: event.filters || {}
         };
-        this.loadStockDataLazy(lazyEvent);
-    }
-
-    getStockStatus(stock: StockData): 'ok' | 'low' | 'out' {
-        if (stock.quantity <= 0) return 'out';
-        if (stock.quantity < 10) return 'low';
-        return 'ok';
-    }
-
-    getStockStatusLabel(stock: StockData): string {
-        const status = this.getStockStatus(stock);
-        if (status === 'out') return 'Out of Stock';
-        if (status === 'low') return 'Low Stock';
-        return 'In Stock';
+        this.loadStoresDataLazy(lazyEvent);
     }
 
     getStoreTypeSeverity(type?: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {

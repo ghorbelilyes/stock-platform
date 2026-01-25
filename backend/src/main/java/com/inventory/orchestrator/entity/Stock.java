@@ -1,8 +1,10 @@
 package com.inventory.orchestrator.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 @Table(name = "stock")
 @IdClass(StockId.class)
 public class Stock {

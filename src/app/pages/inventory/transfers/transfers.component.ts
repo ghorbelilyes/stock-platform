@@ -3,14 +3,24 @@ import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { TransferService } from '../../../shared/services/transfer.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
 import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.models';
 
+interface LazyLoadEvent {
+    first?: number;
+    rows?: number | null;
+    sortField?: string | string[] | null;
+    sortOrder?: number | null;
+    filters?: any;
+    globalFilter?: string | string[] | null;
+}
+
 @Component({
     selector: 'app-transfers',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, DialogModule, StatusPillComponent],
+    imports: [CommonModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
@@ -74,21 +84,52 @@ import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.m
             <div class="col-span-12">
                 <div class="card">
                     <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Active Transfers</h2>
-                    <p-table [value]="transfers" [paginator]="true" [rows]="10" [loading]="loadingTransfers">
+                    <p-table 
+                        [value]="transfers" 
+                        [paginator]="true" 
+                        [rows]="pageSize"
+                        [totalRecords]="totalRecords"
+                        [lazy]="true"
+                        (onLazyLoad)="loadTransfersDataLazy($event)"
+                        [globalFilterFields]="['sourceStoreName', 'destinationStoreName', 'notes']"
+                        [loading]="loadingTransfers"
+                        [sortMode]="'multiple'"
+                        #dt>
+                        <ng-template pTemplate="caption">
+                            <div class="flex justify-between items-center">
+                                <span class="p-input-icon-left">
+                                    <i class="pi pi-search"></i>
+                                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target), 'contains')" placeholder="Search by Store, Product, or Reason" />
+                                </span>
+                            </div>
+                        </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
-                                <th>ID</th>
-                                <th>Date</th>
-                                <th>From Store</th>
-                                <th>To Store</th>
+                                <th [pSortableColumn]="'createdAt'">
+                                    Date
+                                    <p-sortIcon [field]="'createdAt'"></p-sortIcon>
+                                </th>
+                                <th [pSortableColumn]="'sourceStoreName'">
+                                    From Store
+                                    <p-sortIcon [field]="'sourceStoreName'"></p-sortIcon>
+                                </th>
+                                <th [pSortableColumn]="'destinationStoreName'">
+                                    To Store
+                                    <p-sortIcon [field]="'destinationStoreName'"></p-sortIcon>
+                                </th>
                                 <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Reason</th>
+                                <th [pSortableColumn]="'items.quantity'">
+                                    Quantity
+                                    <p-sortIcon [field]="'items.quantity'"></p-sortIcon>
+                                </th>
+                                <th [pSortableColumn]="'notes'">
+                                    Reason
+                                    <p-sortIcon [field]="'notes'"></p-sortIcon>
+                                </th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-transfer>
                             <tr>
-                                <td>{{ transfer.id }}</td>
                                 <td>{{ transfer.createdAt | date:'short' }}</td>
                                 <td>{{ transfer.sourceStoreName || transfer.sourceStoreId }}</td>
                                 <td>{{ transfer.destinationStoreName || transfer.destinationStoreId }}</td>
@@ -99,7 +140,7 @@ import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.m
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="7" class="text-center py-8 text-muted-color">
+                                <td colspan="6" class="text-center py-8 text-muted-color">
                                     No transfers found. Create a transfer to get started.
                                 </td>
                             </tr>
@@ -121,10 +162,12 @@ export class TransfersComponent implements OnInit {
     showTransferWizard = false;
     loadingSuggestions = false;
     loadingTransfers = false;
+    totalRecords = 0;
+    pageSize = 20;
 
     ngOnInit() {
         this.loadSuggestions();
-        this.loadTransfers();
+        // Initial load will be triggered by lazy load
     }
 
     private loadSuggestions() {
@@ -133,11 +176,20 @@ export class TransfersComponent implements OnInit {
         this.loadingSuggestions = false;
     }
 
-    private loadTransfers() {
+    loadTransfersDataLazy(event: LazyLoadEvent) {
         this.loadingTransfers = true;
+        const page = event.first && event.rows ? Math.floor(event.first / event.rows) : 0;
+        const size = event.rows || this.pageSize;
+        
+        this.pageSize = size;
+
         this.transferService.getTransfers().subscribe({
             next: (transfers) => {
-                this.transfers = transfers;
+                // Manual pagination for now (backend doesn't support pagination yet)
+                const start = page * size;
+                const end = start + size;
+                this.transfers = transfers.slice(start, end);
+                this.totalRecords = transfers.length;
                 this.loadingTransfers = false;
             },
             error: (error) => {

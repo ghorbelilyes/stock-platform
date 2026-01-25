@@ -13,10 +13,10 @@ public class ColumnMappingService {
     
     private static final Map<FileType, List<String>> REQUIRED_COLUMNS = Map.of(
         FileType.STOCK, Arrays.asList("id_store", "id_product", "quantity"),
-        FileType.SALES, Arrays.asList("id_store", "id_product", "quantity"),
+        FileType.SALES, Arrays.asList("id_store", "id_product", "quantity", "range_date"),
         FileType.TRANSFER, Arrays.asList("date", "id_store_sent", "id_store_receive", "id_product", "reason", "quantity"),
-        FileType.STORE, Arrays.asList("serial_number", "name", "city", "type"),
-        FileType.PRODUCT, Arrays.asList("code_barre", "name", "description")
+        FileType.STORE, Arrays.asList("id", "serial_number", "name", "city", "type"),
+        FileType.PRODUCT, Arrays.asList("id", "code_barre", "name", "description")
     );
     
     /**
@@ -74,16 +74,22 @@ public class ColumnMappingService {
             }
         }
         
-        // Handle numeric columns
-        if (backendColumn.contains("id_") || backendColumn.equals("quantity")) {
+        // Handle numeric ID columns (id, id_store, id_product, etc.)
+        if (backendColumn.equals("id") || (backendColumn.contains("id_") && !backendColumn.equals("id"))) {
+            try {
+                // Parse as Long (numeric ID from client)
+                return Long.parseLong(value.trim());
+            } catch (NumberFormatException e) {
+                return value; // Return as string if parsing fails
+            }
+        }
+        
+        // Handle numeric columns (quantity, etc.)
+        if (backendColumn.equals("quantity")) {
             try {
                 // Remove any non-numeric characters except minus sign
                 String numericValue = value.replaceAll("[^0-9-]", "");
-                if (backendColumn.contains("id_")) {
-                    return Long.parseLong(numericValue);
-                } else {
-                    return Integer.parseInt(numericValue);
-                }
+                return Integer.parseInt(numericValue);
             } catch (NumberFormatException e) {
                 return value; // Return as string if parsing fails
             }

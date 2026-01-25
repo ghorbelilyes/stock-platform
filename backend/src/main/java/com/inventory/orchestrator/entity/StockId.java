@@ -1,18 +1,35 @@
 package com.inventory.orchestrator.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.io.Serializable;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class StockId implements Serializable {
     
     private Long idStore;
     private Long idProduct;
+    
+    public StockId() {
+    }
+    
+    public StockId(Long idStore, Long idProduct) {
+        this.idStore = idStore;
+        this.idProduct = idProduct;
+    }
+    
+    public Long getIdStore() {
+        return idStore;
+    }
+    
+    public void setIdStore(Long idStore) {
+        this.idStore = idStore;
+    }
+    
+    public Long getIdProduct() {
+        return idProduct;
+    }
+    
+    public void setIdProduct(Long idProduct) {
+        this.idProduct = idProduct;
+    }
     
     @Override
     public boolean equals(Object o) {

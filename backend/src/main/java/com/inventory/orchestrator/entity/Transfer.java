@@ -1,5 +1,6 @@
 package com.inventory.orchestrator.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -9,6 +10,7 @@ public class Transfer {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Long id;
     
     @Column(nullable = false)
@@ -31,21 +33,23 @@ public class Transfer {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_product", insertable = false, updatable = false)
+    @JsonIgnore
     private Product product;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_store_sent", insertable = false, updatable = false)
+    @JsonIgnore
     private Store storeSent;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_store_receive", insertable = false, updatable = false)
+    @JsonIgnore
     private Store storeReceive;
     
     public Transfer() {
     }
     
-    public Transfer(Long id, LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity) {
-        this.id = id;
+    public Transfer(LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity) {
         this.date = date;
         this.idStoreSent = idStoreSent;
         this.idStoreReceive = idStoreReceive;

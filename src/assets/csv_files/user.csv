@@ -1,7 +1,3 @@
 serial_number,name,city,type
-846546546,Store D,California,store
-123456789,Store A,New York,store
-987654321,Store B,Los Angeles,store
-555555555,Warehouse 1,Chicago,warehouse
-111111111,Store C,Miami,store
-222222222,Warehouse 2,Houston,warehouse
+444444444,Store 2,California,store
+22222222222,Store 3,New York,store
