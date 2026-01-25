@@ -78,7 +78,7 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate6</artifactId>
         </dependency>
-
+        
         <!-- OpenAPI / Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>

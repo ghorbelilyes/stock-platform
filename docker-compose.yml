@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: inventory-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: store
+    ports:
+      - "5433:5432"  # Use 5433 on host to avoid conflict with local PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventory-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inventory-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/store
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/products || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: inventory-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - inventory-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  inventory-network:
+    driver: bridge

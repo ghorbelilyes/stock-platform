@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class Product {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
     
     @Column(name = "code_barre", nullable = false, unique = true)
@@ -38,6 +38,8 @@ public class Product {
     }
     
     public Product(String codeBarre, String name, String description) {
+        // ID equals code_barre (parsed as Long)
+        this.id = Long.parseLong(codeBarre);
         this.codeBarre = codeBarre;
         this.name = name;
         this.description = description;

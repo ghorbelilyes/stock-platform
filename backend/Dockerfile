@@ -16,6 +16,9 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
+# Install wget for health check
+RUN apk add --no-cache wget
+
 # Create non-root user
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
