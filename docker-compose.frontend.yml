@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.standalone
+    container_name: inventory-frontend
+    ports:
+      - "4200:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Allows access to host machine from container
+    networks:
+      - inventory-network
+
+networks:
+  inventory-network:
+    driver: bridge

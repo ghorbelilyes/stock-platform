@@ -333,12 +333,6 @@ public class DataImportService {
                 String city = getStringValue(transformedRow, "city");
                 String type = getStringValue(transformedRow, "type");
                 
-                if (id == null) {
-                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
-                    result.setRowsFailed(result.getRowsFailed() + 1);
-                    continue;
-                }
-                
                 // Validate serial number (required and unique)
                 if (serialNumber == null || serialNumber.trim().isEmpty()) {
                     result.getErrors().add("Row " + rowNumber + ": Missing required field 'serial_number'");
@@ -348,6 +342,13 @@ public class DataImportService {
                 
                 serialNumber = serialNumber.trim();
                 
+                // ID is REQUIRED for data import (not auto-derived)
+                if (id == null) {
+                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
+                    result.setRowsFailed(result.getRowsFailed() + 1);
+                    continue;
+                }
+                
                 // Check if store with this ID already exists
                 java.util.Optional<Store> existingStoreOpt = storeRepository.findById(id);
                 Store store;
@@ -356,7 +357,7 @@ public class DataImportService {
                     // Update existing store
                     store = existingStoreOpt.get();
                 } else {
-                    // Create new store with client-provided ID
+                    // Create new store with provided ID
                     store = new Store();
                     store.setId(id);
                     store.setSerialNumber(serialNumber);
@@ -454,12 +455,6 @@ public class DataImportService {
                 String name = getStringValue(transformedRow, "name");
                 String description = getStringValue(transformedRow, "description");
                 
-                if (id == null) {
-                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
-                    result.setRowsFailed(result.getRowsFailed() + 1);
-                    continue;
-                }
-                
                 // Validate code_barre (required and unique)
                 if (codeBarre == null || codeBarre.trim().isEmpty()) {
                     result.getErrors().add("Row " + rowNumber + ": Missing required field 'code_barre'");
@@ -469,6 +464,13 @@ public class DataImportService {
                 
                 codeBarre = codeBarre.trim();
                 
+                // ID is REQUIRED for data import (not auto-derived)
+                if (id == null) {
+                    result.getErrors().add("Row " + rowNumber + ": Missing required field 'id'");
+                    result.setRowsFailed(result.getRowsFailed() + 1);
+                    continue;
+                }
+                
                 // Check if product with this ID already exists
                 java.util.Optional<Product> existingProductOpt = productRepository.findById(id);
                 Product product;
@@ -477,7 +479,7 @@ public class DataImportService {
                     // Update existing product
                     product = existingProductOpt.get();
                 } else {
-                    // Create new product with client-provided ID
+                    // Create new product with provided ID
                     product = new Product();
                     product.setId(id);
                     product.setCodeBarre(codeBarre);

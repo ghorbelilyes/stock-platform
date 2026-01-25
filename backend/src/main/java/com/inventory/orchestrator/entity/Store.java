@@ -11,7 +11,7 @@ import java.util.List;
 public class Store {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
     
     @Column(name = "serial_number", nullable = false, unique = true)
@@ -46,6 +46,8 @@ public class Store {
     }
     
     public Store(String serialNumber, String name, String city, String type, Integer leadTimeDays) {
+        // ID equals serial_number (parsed as Long)
+        this.id = Long.parseLong(serialNumber);
         this.serialNumber = serialNumber;
         this.name = name;
         this.city = city;

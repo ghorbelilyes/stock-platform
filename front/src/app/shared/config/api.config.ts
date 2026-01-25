@@ -1,5 +1,6 @@
 export const API_CONFIG = {
-    baseUrl: 'http://localhost:8080/api',
+    // Use relative path for Docker (nginx proxy) or absolute for local dev
+    baseUrl: window.location.origin + '/api',
     endpoints: {
         // File operations
         parseHeaders: '/files/parse-headers',
