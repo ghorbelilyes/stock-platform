@@ -1,6 +1,10 @@
+// Detect if running locally (development) or in Docker (production)
+const isLocalDev = window.location.origin.includes('localhost:4200') || 
+                   window.location.origin.includes('127.0.0.1:4200');
+
 export const API_CONFIG = {
-    // Use relative path for Docker (nginx proxy) or absolute for local dev
-    baseUrl: window.location.origin + '/api',
+    // Use absolute URL for local dev, relative path for Docker (nginx proxy)
+    baseUrl: isLocalDev ? 'http://localhost:8080/api' : window.location.origin + '/api',
     endpoints: {
         // File operations
         parseHeaders: '/files/parse-headers',

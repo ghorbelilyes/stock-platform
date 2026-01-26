@@ -1,0 +1,8 @@
+id,serial_number,name,city,type,lead_time_days
+846546546,846546546,Main Store,New York,store,3
+123456789,123456789,Secondary Store,Los Angeles,store,2
+111111111,111111111,Airport Kiosk,Chicago,store,1
+999999999,999999999,Main Warehouse,Dallas,warehouse,5
+888888888,888888888,East Coast Distribution,Boston,warehouse,4
+777777777,777777777,Suburban Store,Miami,store,3
+666666666,666666666,City Center,Seattle,store,2
