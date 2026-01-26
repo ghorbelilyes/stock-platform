@@ -189,6 +189,11 @@ export class AppMenu {
                         routerLink: ['/inventory/products']
                     },
                     {
+                        label: 'Categories',
+                        icon: 'pi pi-fw pi-tags',
+                        routerLink: ['/inventory/categories']
+                    },
+                    {
                         label: 'Stock Overview',
                         icon: 'pi pi-fw pi-box',
                         routerLink: ['/inventory/stock']

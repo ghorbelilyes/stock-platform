@@ -224,6 +224,7 @@ export class InventoryDataService {
             name?: string;
             codeBarre?: string;
             description?: string;
+            categoryId?: number;
         }
     ): Observable<any> {
         let params = new HttpParams()
@@ -248,6 +249,9 @@ export class InventoryDataService {
             if (filters.description) {
                 params = params.set('description', filters.description);
             }
+            if (filters.categoryId) {
+                params = params.set('categoryId', filters.categoryId.toString());
+            }
         }
 
         return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.products}`, { params })
@@ -255,6 +259,132 @@ export class InventoryDataService {
                 map(response => response.data),
                 catchError(error => {
                     console.error('Error fetching products:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Get all categories with pagination, sorting, filtering, and search
+    getCategories(
+        page: number = 0, 
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            name?: string;
+            description?: string;
+        }
+    ): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
+
+        if (sort) {
+            params = params.set('sort', sort);
+        }
+
+        if (search) {
+            params = params.set('search', search);
+        }
+
+        if (filters) {
+            if (filters.name) {
+                params = params.set('name', filters.name);
+            }
+            if (filters.description) {
+                params = params.set('description', filters.description);
+            }
+        }
+
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}`, { params })
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error fetching categories:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Get category by ID
+    getCategoryById(id: number): Observable<any> {
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}/${id}`)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error fetching category:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Create category
+    createCategory(category: { name: string; description?: string }): Observable<any> {
+        return this.http.post<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}`, category)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error creating category:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Update category
+    updateCategory(id: number, category: { name: string; description?: string }): Observable<any> {
+        return this.http.put<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}/${id}`, category)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error updating category:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Delete category
+    deleteCategory(id: number): Observable<any> {
+        return this.http.delete<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}/${id}`)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error deleting category:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Create product
+    createProduct(product: { id?: number; codeBarre: string; name: string; description?: string; category?: { id: number } }): Observable<any> {
+        return this.http.post<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.products}`, product)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error creating product:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Update product
+    updateProduct(id: number, product: { name?: string; description?: string; category?: { id: number } | null }): Observable<any> {
+        return this.http.put<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.products}/${id}`, product)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error updating product:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
+    // Delete product
+    deleteProduct(id: number): Observable<any> {
+        return this.http.delete<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.products}/${id}`)
+            .pipe(
+                map(response => response.data),
+                catchError(error => {
+                    console.error('Error deleting product:', error);
                     return throwError(() => error);
                 })
             );

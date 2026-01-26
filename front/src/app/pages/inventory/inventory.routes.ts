@@ -8,6 +8,7 @@ export default [
     { path: 'transfers', loadComponent: () => import('./transfers/transfers.component').then(m => m.TransfersComponent) },
     { path: 'stores', loadComponent: () => import('./stores/stores.component').then(m => m.StoresComponent) },
     { path: 'products', loadComponent: () => import('./products/products.component').then(m => m.ProductsComponent) },
+    { path: 'categories', loadComponent: () => import('./categories/categories.component').then(m => m.CategoriesComponent) },
     { path: 'reports', loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent) },
     { path: 'settings', loadComponent: () => import('./settings/settings.component').then(m => m.SettingsComponent) },
     { path: '**', redirectTo: '/notfound' }

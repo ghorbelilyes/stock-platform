@@ -23,27 +23,42 @@ FROM (VALUES
 ) AS v(serial_number, name, city, type, lead_time_days)
 WHERE NOT EXISTS (SELECT 1 FROM store WHERE store.serial_number = v.serial_number);
 
+-- Insert Categories (only if table is empty)
+INSERT INTO category (id, name, description)
+SELECT * FROM (VALUES
+    (1, 'Computers & Laptops', 'Desktop computers, laptops, and workstations'),
+    (2, 'Peripherals', 'Mice, keyboards, webcams, and other input devices'),
+    (3, 'Monitors & Displays', 'Computer monitors, displays, and screens'),
+    (4, 'Audio Equipment', 'Headphones, speakers, and audio accessories'),
+    (5, 'Storage Devices', 'External hard drives, SSDs, and storage solutions'),
+    (6, 'Accessories', 'Docking stations, hubs, converters, and other accessories')
+) AS v(id, name, description)
+WHERE NOT EXISTS (SELECT 1 FROM category WHERE category.id = v.id);
+
 -- Insert Products (only if table is empty)
 -- ID equals code_barre (as Long) - auto-derived
-INSERT INTO product (id, code_barre, name, description)
+-- Products are linked to categories
+INSERT INTO product (id, code_barre, name, description, category_id)
 SELECT 
     code_barre::bigint AS id,  -- Auto-derive ID from code_barre
     code_barre,
     name,
-    description
+    description,
+    category_id
 FROM (VALUES
-    ('1234567890123', 'Laptop Dell XPS 15', 'High-performance laptop with 15-inch display; Intel i7 processor; 16GB RAM; 512GB SSD'),
-    ('2345678901234', 'Wireless Mouse Logitech MX Master 3', 'Ergonomic wireless mouse with precision tracking and multi-device connectivity'),
-    ('3456789012345', 'Mechanical Keyboard Keychron K8', 'Wireless mechanical keyboard with RGB backlighting and hot-swappable switches'),
-    ('4567890123456', 'USB-C Hub 7-in-1', 'Multi-port USB-C hub with HDMI; USB 3.0; SD card reader; and power delivery'),
-    ('5678901234567', 'Monitor LG UltraWide 34', '34-inch ultrawide curved monitor with 3440x1440 resolution and USB-C connectivity'),
-    ('6789012345678', 'Webcam Logitech C920 HD', '1080p HD webcam with autofocus and stereo audio'),
-    ('7890123456789', 'Standing Desk Converter', 'Adjustable height desk converter for ergonomic workspace setup'),
-    ('8901234567890', 'Noise Cancelling Headphones Sony WH-1000XM5', 'Wireless over-ear headphones with industry-leading noise cancellation'),
-    ('9012345678901', 'External SSD Samsung T7 1TB', 'Portable SSD with USB 3.2 Gen 2; read speeds up to 1050MB/s'),
-    ('0123456789012', 'Docking Station Dell WD19', 'USB-C docking station with dual display support and 90W power delivery')
-) AS v(code_barre, name, description)
-WHERE NOT EXISTS (SELECT 1 FROM product WHERE product.code_barre = v.code_barre);
+    ('1234567890123', 'Laptop Dell XPS 15', 'High-performance laptop with 15-inch display; Intel i7 processor; 16GB RAM; 512GB SSD', 1),
+    ('2345678901234', 'Wireless Mouse Logitech MX Master 3', 'Ergonomic wireless mouse with precision tracking and multi-device connectivity', 2),
+    ('3456789012345', 'Mechanical Keyboard Keychron K8', 'Wireless mechanical keyboard with RGB backlighting and hot-swappable switches', 2),
+    ('4567890123456', 'USB-C Hub 7-in-1', 'Multi-port USB-C hub with HDMI; USB 3.0; SD card reader; and power delivery', 6),
+    ('5678901234567', 'Monitor LG UltraWide 34', '34-inch ultrawide curved monitor with 3440x1440 resolution and USB-C connectivity', 3),
+    ('6789012345678', 'Webcam Logitech C920 HD', '1080p HD webcam with autofocus and stereo audio', 2),
+    ('7890123456789', 'Standing Desk Converter', 'Adjustable height desk converter for ergonomic workspace setup', 6),
+    ('8901234567890', 'Noise Cancelling Headphones Sony WH-1000XM5', 'Wireless over-ear headphones with industry-leading noise cancellation', 4),
+    ('9012345678901', 'External SSD Samsung T7 1TB', 'Portable SSD with USB 3.2 Gen 2; read speeds up to 1050MB/s', 5),
+    ('0123456789012', 'Docking Station Dell WD19', 'USB-C docking station with dual display support and 90W power delivery', 6)
+) AS v(code_barre, name, description, category_id)
+WHERE NOT EXISTS (SELECT 1 FROM product WHERE product.code_barre = v.code_barre)
+AND EXISTS (SELECT 1 FROM category WHERE category.id = v.category_id);
 
 -- Insert Stock (only if table is empty)
 -- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)

@@ -17,6 +17,7 @@ export const API_CONFIG = {
         products: '/products',
         stocks: '/stocks',
         sales: '/sales',
-        transfers: '/transfers'
+        transfers: '/transfers',
+        categories: '/categories'
     }
 };
