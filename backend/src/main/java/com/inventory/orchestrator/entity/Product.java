@@ -24,6 +24,11 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
     
+    // Many-to-one relationship with Category
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private Category category;
+    
     // Bidirectional relationships
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private java.util.List<Stock> stocks = new java.util.ArrayList<>();
@@ -82,6 +87,14 @@ public class Product {
     
     public void setDescription(String description) {
         this.description = description;
+    }
+    
+    public Category getCategory() {
+        return category;
+    }
+    
+    public void setCategory(Category category) {
+        this.category = category;
     }
     
     public java.util.List<Stock> getStocks() {

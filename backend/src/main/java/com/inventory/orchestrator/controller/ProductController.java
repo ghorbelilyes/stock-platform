@@ -2,7 +2,9 @@ package com.inventory.orchestrator.controller;
 
 import com.inventory.orchestrator.dto.ApiResponse;
 import com.inventory.orchestrator.entity.Product;
+import com.inventory.orchestrator.entity.Category;
 import com.inventory.orchestrator.repository.ProductRepository;
+import com.inventory.orchestrator.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,10 +19,12 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     
     @Autowired
-    public ProductController(ProductRepository productRepository) {
+    public ProductController(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
     }
     
     /**
@@ -45,7 +49,8 @@ public class ProductController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String codeBarre,
-            @RequestParam(required = false) String description
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long categoryId
     ) {
         // Validate page and size
         if (page < 0) page = 0;
@@ -62,6 +67,9 @@ public class ProductController {
         if (search != null && !search.trim().isEmpty()) {
             // Global search across multiple fields
             products = productRepository.searchProducts(search.trim(), pageable);
+        } else if (categoryId != null) {
+            // Filter by category
+            products = productRepository.findByCategoryId(categoryId, pageable);
         } else if (name != null && !name.trim().isEmpty()) {
             // Filter by name
             products = productRepository.findByNameContainingIgnoreCase(name.trim(), pageable);
@@ -124,5 +132,78 @@ public class ProductController {
         return productRepository.findById(id)
             .map(product -> ResponseEntity.ok(ApiResponse.success(product, "Product retrieved successfully")))
             .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @PostMapping
+    public ResponseEntity<ApiResponse<Product>> createProduct(@RequestBody Product product) {
+        // Validate required fields
+        if (product.getCodeBarre() == null || product.getCodeBarre().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.<Product>error("VALIDATION_ERROR", "Product code_barre is required", java.util.Collections.emptyList()));
+        }
+        
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.<Product>error("VALIDATION_ERROR", "Product name is required", java.util.Collections.emptyList()));
+        }
+        
+        // Set ID from codeBarre if not provided
+        if (product.getId() == null) {
+            try {
+                product.setId(Long.parseLong(product.getCodeBarre()));
+            } catch (NumberFormatException e) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.<Product>error("VALIDATION_ERROR", "Invalid code_barre format", java.util.Collections.emptyList()));
+            }
+        }
+        
+        // Set category if categoryId is provided
+        if (product.getCategory() != null && product.getCategory().getId() != null) {
+            Category category = categoryRepository.findById(product.getCategory().getId())
+                .orElse(null);
+            product.setCategory(category);
+        }
+        
+        Product savedProduct = productRepository.save(product);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+            .body(ApiResponse.success(savedProduct, "Product created successfully"));
+    }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Product>> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        return productRepository.findById(id)
+            .map(existingProduct -> {
+                if (product.getName() != null && !product.getName().trim().isEmpty()) {
+                    existingProduct.setName(product.getName().trim());
+                }
+                if (product.getDescription() != null) {
+                    existingProduct.setDescription(product.getDescription().trim());
+                }
+                
+                // Update category if provided
+                if (product.getCategory() != null && product.getCategory().getId() != null) {
+                    Category category = categoryRepository.findById(product.getCategory().getId())
+                        .orElse(null);
+                    existingProduct.setCategory(category);
+                } else if (product.getCategory() == null) {
+                    existingProduct.setCategory(null);
+                }
+                
+                Product updatedProduct = productRepository.save(existingProduct);
+                return ResponseEntity.ok(ApiResponse.success(updatedProduct, "Product updated successfully"));
+            })
+            .orElse(ResponseEntity.ok(ApiResponse.<Product>error("NOT_FOUND", "Product not found", java.util.Collections.emptyList())));
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+        java.util.Optional<Product> productOpt = productRepository.findById(id);
+        if (productOpt.isEmpty()) {
+            return ResponseEntity.ok(ApiResponse.<Void>error("NOT_FOUND", "Product not found", java.util.Collections.emptyList()));
+        }
+        
+        Product product = productOpt.get();
+        productRepository.delete(product);
+        return ResponseEntity.ok(ApiResponse.success(null, "Product deleted successfully"));
     }
 }
