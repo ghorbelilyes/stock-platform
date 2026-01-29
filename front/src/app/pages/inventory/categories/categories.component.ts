@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -19,6 +20,7 @@ interface CategoryData {
     id: number;
     name: string;
     description?: string;
+    allowStoreToStoreTransfer?: boolean;
     products?: ProductData[];
 }
 
@@ -34,7 +36,7 @@ interface ProductData {
     selector: 'app-categories',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, TableModule, InputTextModule, ButtonModule,
+        CommonModule, FormsModule, TranslateModule, TableModule, InputTextModule, ButtonModule,
         DialogModule, TextareaModule, MultiSelectModule, CheckboxModule, ConfirmDialogModule, ToastModule, TooltipModule
     ],
     providers: [ConfirmationService, MessageService],
@@ -50,12 +52,12 @@ interface ProductData {
                 <div class="card">
                     <div class="flex justify-between items-center mb-6">
                         <div>
-                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">Categories</h1>
-                            <p class="text-muted-color">Manage product categories and their associated products.</p>
+                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'categories.title' | translate }}</h1>
+                            <p class="text-muted-color">{{ 'categories.description' | translate }}</p>
                         </div>
                         <button 
                             pButton 
-                            label="Add Category" 
+                            [label]="'categories.addCategory' | translate" 
                             icon="pi pi-plus" 
                             class="p-button-primary"
                             (click)="openAddDialog()">
@@ -88,7 +90,7 @@ interface ProductData {
                                         type="text" 
                                         [(ngModel)]="globalSearch"
                                         (input)="onGlobalSearch($event)"
-                                        placeholder="Search by Name or Description" 
+                                        [placeholder]="'common.search' | translate" 
                                         class="w-full"
                                     />
                                 </span>
@@ -114,13 +116,14 @@ interface ProductData {
                                         <p-columnFilter type="text" field="description" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
                                     </div>
                                 </th>
+                                <th>Allow Store-to-Store Transfer</th>
                                 <th>Products Count</th>
                                 <th>Actions</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="4" class="text-center py-8 text-muted-color">
+                                <td colspan="5" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
                                         <p class="mb-2">No categories found.</p>
                                         <p class="text-sm" *ngIf="globalSearch">Try adjusting your search query.</p>
@@ -132,6 +135,14 @@ interface ProductData {
                             <tr>
                                 <td>{{ category.name }}</td>
                                 <td>{{ category.description || 'N/A' }}</td>
+                                <td class="text-center">
+                                    <span *ngIf="category.allowStoreToStoreTransfer !== false" class="text-green-600">
+                                        <i class="pi pi-check-circle"></i> Yes
+                                    </span>
+                                    <span *ngIf="category.allowStoreToStoreTransfer === false" class="text-red-600">
+                                        <i class="pi pi-times-circle"></i> No
+                                    </span>
+                                </td>
                                 <td>{{ category.products?.length || 0 }}</td>
                                 <td>
                                     <div class="flex gap-2">
@@ -198,42 +209,89 @@ interface ProductData {
                             rows="3"
                             placeholder="Category description"></textarea>
                     </div>
-                    <div *ngIf="isEditMode">
-                        <label for="productsSelect" class="block mb-2 font-medium">Add Products Without Category</label>
-                        <p-multiselect 
-                            id="productsSelect"
-                            [(ngModel)]="selectedProductsWithoutCategory"
-                            name="productsSelect"
-                            [options]="productsWithoutCategory"
-                            optionLabel="name"
-                            placeholder="Select products to add to this category"
-                            display="chip"
-                            [filter]="true"
-                            [loading]="loadingProductsWithoutCategory"
-                            [showClear]="true"
-                            appendTo="body"
-                            class="w-full">
-                            <ng-template let-product pTemplate="item">
-                                <div class="flex flex-col">
-                                    <span class="font-medium">{{ product.name }}</span>
-                                    <span class="text-sm text-muted-color">{{ product.codeBarre }}</span>
-                                </div>
-                            </ng-template>
-                        </p-multiselect>
-                        <small class="text-muted-color mt-1 block">Select products that don't have a category to add them to this category.</small>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <p-checkbox 
+                                [(ngModel)]="categoryForm.allowStoreToStoreTransfer" 
+                                inputId="allowStoreToStoreTransfer"
+                                [binary]="true"
+                                name="allowStoreToStoreTransfer"
+                                [ngModelOptions]="{standalone: true}">
+                            </p-checkbox>
+                            <label for="allowStoreToStoreTransfer" class="cursor-pointer">
+                                Allow store-to-store transfer
+                            </label>
+                        </div>
+                        <small class="text-muted-color mt-1 block">
+                            If unchecked, only warehouse → store transfers are allowed for products in this category.
+                        </small>
+                    </div>
+                    <!-- Products Selection Section - Show in both create and edit modes -->
+                    <div class="flex flex-col gap-4 border-t pt-4">
+                        <div class="flex items-center gap-2">
+                            <p-checkbox 
+                                [(ngModel)]="showOnlyWithoutCategory" 
+                                inputId="filterCheckbox"
+                                [binary]="true"
+                                name="filterCheckbox"
+                                [ngModelOptions]="{standalone: true}"
+                                (onChange)="onFilterChange()">
+                            </p-checkbox>
+                            <label for="filterCheckbox" class="cursor-pointer">
+                                Show only products without category
+                            </label>
+                        </div>
+                        <div>
+                            <label for="productsToAdd" class="block mb-2 font-medium">Select Products to Add</label>
+                            <p-multiselect 
+                                id="productsToAdd"
+                                [(ngModel)]="selectedProductsToAdd"
+                                name="productsToAdd"
+                                [ngModelOptions]="{standalone: true}"
+                                [options]="availableProductsForSelection"
+                                optionLabel="name"
+                                placeholder="Select products to add to this category"
+                                display="chip"
+                                [filter]="true"
+                                [loading]="loadingAvailableProducts"
+                                [showClear]="true"
+                                appendTo="body"
+                                class="w-full">
+                                <ng-template let-product pTemplate="item">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ product.name }}</span>
+                                        <span class="text-sm text-muted-color">{{ product.codeBarre }}</span>
+                                        <span class="text-xs text-muted-color" *ngIf="product.category">
+                                            Current category: {{ product.category.name }}
+                                        </span>
+                                    </div>
+                                </ng-template>
+                            </p-multiselect>
+                        </div>
+                        <div class="flex justify-end">
+                            <button 
+                                pButton 
+                                type="button"
+                                [label]="'categories.addSelectedProducts' | translate" 
+                                icon="pi pi-plus" 
+                                class="p-button-primary"
+                                [disabled]="!selectedProductsToAdd || selectedProductsToAdd.length === 0"
+                                (click)="addSelectedProductsToCategory()">
+                            </button>
+                        </div>
                     </div>
                     <div class="flex justify-end gap-2 mt-4">
                         <button 
                             pButton 
                             type="button"
-                            label="Cancel" 
+                            [label]="'common.cancel' | translate" 
                             class="p-button-secondary"
                             (click)="showCategoryDialog = false">
                         </button>
                         <button 
                             pButton 
                             type="submit"
-                            label="Save" 
+                            [label]="'common.save' | translate" 
                             class="p-button-primary"
                             [disabled]="!categoryForm.name || categoryForm.name.trim() === ''">
                         </button>
@@ -257,7 +315,7 @@ interface ProductData {
                         <h3 class="text-lg font-semibold">Add Products to Category</h3>
                         <button 
                             pButton 
-                            label="Create New Product" 
+                            [label]="'categories.createNewProduct' | translate" 
                             icon="pi pi-plus" 
                             class="p-button-sm p-button-outlined"
                             (click)="openAddProductDialog()">
@@ -307,7 +365,7 @@ interface ProductData {
                         <div class="flex justify-end">
                             <button 
                                 pButton 
-                                label="Add Selected Products" 
+                                [label]="'categories.addSelectedProducts' | translate" 
                                 icon="pi pi-plus" 
                                 class="p-button-primary"
                                 [disabled]="!selectedProductsToAdd || selectedProductsToAdd.length === 0"
@@ -412,14 +470,14 @@ interface ProductData {
                         <button 
                             pButton 
                             type="button"
-                            label="Cancel" 
+                            [label]="'common.cancel' | translate" 
                             class="p-button-secondary"
                             (click)="showProductDialog = false">
                         </button>
                         <button 
                             pButton 
                             type="submit"
-                            label="Save" 
+                            [label]="'common.save' | translate" 
                             class="p-button-primary"
                             [disabled]="!productForm.name || productForm.name.trim() === '' || !productForm.codeBarre || productForm.codeBarre.trim() === ''">
                         </button>
@@ -461,7 +519,8 @@ export class CategoriesComponent implements OnInit {
     categoryForm = {
         id: null as number | null,
         name: '',
-        description: ''
+        description: '',
+        allowStoreToStoreTransfer: true
     };
     
     productsWithoutCategory: ProductData[] = [];
@@ -563,18 +622,27 @@ export class CategoriesComponent implements OnInit {
     openAddDialog() {
         this.isEditMode = false;
         this.resetCategoryForm();
+        this.selectedCategory = null; // Clear selected category for create mode
+        this.showOnlyWithoutCategory = true; // Default to showing only products without category
+        this.selectedProductsToAdd = [];
+        this.loadAvailableProducts();
         this.showCategoryDialog = true;
     }
 
     openEditDialog(category: CategoryData) {
         this.isEditMode = true;
+        this.selectedCategory = category; // Set selected category for edit mode
         this.categoryForm = {
             id: category.id,
             name: category.name,
-            description: category.description || ''
+            description: category.description || '',
+            allowStoreToStoreTransfer: category.allowStoreToStoreTransfer !== false
         };
         this.selectedProductsWithoutCategory = [];
+        this.showOnlyWithoutCategory = true; // Default to showing only products without category
+        this.selectedProductsToAdd = [];
         this.loadProductsWithoutCategory();
+        this.loadAvailableProducts(); // Load available products for selection
         this.showCategoryDialog = true;
     }
 
@@ -585,7 +653,8 @@ export class CategoriesComponent implements OnInit {
 
         const categoryData = {
             name: this.categoryForm.name.trim(),
-            description: this.categoryForm.description?.trim() || undefined
+            description: this.categoryForm.description?.trim() || undefined,
+            allowStoreToStoreTransfer: this.categoryForm.allowStoreToStoreTransfer !== false
         };
 
         const operation = this.isEditMode && this.categoryForm.id
@@ -709,15 +778,18 @@ export class CategoriesComponent implements OnInit {
                     allProducts = response;
                 }
                 
-                // Always exclude products already in this category
-                const categoryProductIds = this.categoryProducts.map(p => p.id);
-                let filteredProducts = allProducts.filter(p => !categoryProductIds.includes(p.id));
+                // Exclude products already in this category (only in edit mode)
+                let filteredProducts = allProducts;
+                if (this.isEditMode && this.selectedCategory && this.selectedCategory.id && this.categoryProducts) {
+                    const categoryProductIds = this.categoryProducts.map(p => p.id);
+                    filteredProducts = allProducts.filter(p => !categoryProductIds.includes(p.id));
+                }
                 
                 if (this.showOnlyWithoutCategory) {
                     // Filter products without category
                     this.availableProductsForSelection = filteredProducts.filter(p => !p.category || !p.category.id);
                 } else {
-                    // Show all products (excluding those already in this category)
+                    // Show all products (excluding those already in this category if editing)
                     this.availableProductsForSelection = filteredProducts;
                 }
                 this.loadingAvailableProducts = false;
@@ -731,11 +803,36 @@ export class CategoriesComponent implements OnInit {
     }
     
     addSelectedProductsToCategory() {
-        if (!this.selectedCategory || !this.selectedProductsToAdd || this.selectedProductsToAdd.length === 0) {
+        if (!this.selectedProductsToAdd || this.selectedProductsToAdd.length === 0) {
             return;
         }
         
-        this.assignProductsToCategory(this.selectedCategory.id, this.selectedProductsToAdd);
+        // For edit mode: category already exists
+        if (this.isEditMode && this.selectedCategory && this.selectedCategory.id) {
+            this.assignProductsToCategory(this.selectedCategory.id, this.selectedProductsToAdd);
+        } else if (!this.isEditMode) {
+            // For create mode: save category first, then add products
+            if (!this.categoryForm.name || this.categoryForm.name.trim() === '') {
+                this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please enter a category name first' });
+                return;
+            }
+            
+            const categoryData = {
+                name: this.categoryForm.name.trim(),
+                description: this.categoryForm.description?.trim() || undefined,
+                allowStoreToStoreTransfer: this.categoryForm.allowStoreToStoreTransfer !== false
+            };
+            
+            this.inventoryService.createCategory(categoryData).subscribe({
+                next: (savedCategory) => {
+                    // Assign selected products to the new category
+                    this.assignProductsToCategory(savedCategory.id, this.selectedProductsToAdd);
+                },
+                error: (error) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: error.error?.error?.message || 'Failed to create category' });
+                }
+            });
+        }
     }
 
     loadCategoryProducts(categoryId: number) {
@@ -846,10 +943,15 @@ export class CategoriesComponent implements OnInit {
         this.categoryForm = {
             id: null,
             name: '',
-            description: ''
+            description: '',
+            allowStoreToStoreTransfer: true
         };
         this.selectedProductsWithoutCategory = [];
         this.productsWithoutCategory = [];
+        this.selectedProductsToAdd = [];
+        this.availableProductsForSelection = [];
+        this.showOnlyWithoutCategory = true;
+        this.selectedCategory = null;
         this.isEditMode = false;
     }
 

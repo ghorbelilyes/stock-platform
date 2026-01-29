@@ -20,6 +20,9 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     private String description;
     
+    @Column(name = "allow_store_to_store_transfer", nullable = false)
+    private Boolean allowStoreToStoreTransfer = true; // Default: allow store-to-store transfers
+    
     // One-to-many relationship with Product
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products = new ArrayList<>();
@@ -62,5 +65,13 @@ public class Category {
     
     public void setProducts(List<Product> products) {
         this.products = products;
+    }
+    
+    public Boolean getAllowStoreToStoreTransfer() {
+        return allowStoreToStoreTransfer;
+    }
+    
+    public void setAllowStoreToStoreTransfer(Boolean allowStoreToStoreTransfer) {
+        this.allowStoreToStoreTransfer = allowStoreToStoreTransfer != null ? allowStoreToStoreTransfer : true;
     }
 }

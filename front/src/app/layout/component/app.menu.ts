@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-menu',
     standalone: true,
-    imports: [CommonModule, AppMenuitem, RouterModule],
+    imports: [CommonModule, AppMenuitem, RouterModule, TranslateModule],
     template: `<ul class="layout-menu">
         <ng-container *ngFor="let item of model; let i = index">
             <li app-menuitem *ngIf="!item.separator" [item]="item" [index]="i" [root]="true"></li>
@@ -15,211 +17,107 @@ import { AppMenuitem } from './app.menuitem';
         </ng-container>
     </ul> `
 })
-export class AppMenu {
+export class AppMenu implements OnInit, OnDestroy {
     model: MenuItem[] = [];
+    private translateService = inject(TranslateService);
+    private langChangeSubscription?: Subscription;
 
     ngOnInit() {
-        // OLD MENU - COMMENTED OUT (keeping for reference)
-        /*
-        this.model = [
-            {
-                label: 'Home',
-                items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }]
-            },
-            {
-                label: 'UI Components',
-                items: [
-                    { label: 'Form Layout', icon: 'pi pi-fw pi-id-card', routerLink: ['/uikit/formlayout'] },
-                    { label: 'Input', icon: 'pi pi-fw pi-check-square', routerLink: ['/uikit/input'] },
-                    { label: 'Button', icon: 'pi pi-fw pi-mobile', class: 'rotated-icon', routerLink: ['/uikit/button'] },
-                    { label: 'Table', icon: 'pi pi-fw pi-table', routerLink: ['/uikit/table'] },
-                    { label: 'List', icon: 'pi pi-fw pi-list', routerLink: ['/uikit/list'] },
-                    { label: 'Tree', icon: 'pi pi-fw pi-share-alt', routerLink: ['/uikit/tree'] },
-                    { label: 'Panel', icon: 'pi pi-fw pi-tablet', routerLink: ['/uikit/panel'] },
-                    { label: 'Overlay', icon: 'pi pi-fw pi-clone', routerLink: ['/uikit/overlay'] },
-                    { label: 'Media', icon: 'pi pi-fw pi-image', routerLink: ['/uikit/media'] },
-                    { label: 'Menu', icon: 'pi pi-fw pi-bars', routerLink: ['/uikit/menu'] },
-                    { label: 'Message', icon: 'pi pi-fw pi-comment', routerLink: ['/uikit/message'] },
-                    { label: 'File', icon: 'pi pi-fw pi-file', routerLink: ['/uikit/file'] },
-                    { label: 'Chart', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/uikit/charts'] },
-                    { label: 'Timeline', icon: 'pi pi-fw pi-calendar', routerLink: ['/uikit/timeline'] },
-                    { label: 'Misc', icon: 'pi pi-fw pi-circle', routerLink: ['/uikit/misc'] }
-                ]
-            },
-            {
-                label: 'Pages',
-                icon: 'pi pi-fw pi-briefcase',
-                routerLink: ['/pages'],
-                items: [
-                    {
-                        label: 'Landing',
-                        icon: 'pi pi-fw pi-globe',
-                        routerLink: ['/landing']
-                    },
-                    {
-                        label: 'Auth',
-                        icon: 'pi pi-fw pi-user',
-                        items: [
-                            {
-                                label: 'Login',
-                                icon: 'pi pi-fw pi-sign-in',
-                                routerLink: ['/auth/login']
-                            },
-                            {
-                                label: 'Error',
-                                icon: 'pi pi-fw pi-times-circle',
-                                routerLink: ['/auth/error']
-                            },
-                            {
-                                label: 'Access Denied',
-                                icon: 'pi pi-fw pi-lock',
-                                routerLink: ['/auth/access']
-                            }
-                        ]
-                    },
-                    {
-                        label: 'Crud',
-                        icon: 'pi pi-fw pi-pencil',
-                        routerLink: ['/pages/crud']
-                    },
-                    {
-                        label: 'Not Found',
-                        icon: 'pi pi-fw pi-exclamation-circle',
-                        routerLink: ['/pages/notfound']
-                    },
-                    {
-                        label: 'Empty',
-                        icon: 'pi pi-fw pi-circle-off',
-                        routerLink: ['/pages/empty']
-                    }
-                ]
-            },
-            {
-                label: 'Hierarchy',
-                items: [
-                    {
-                        label: 'Submenu 1',
-                        icon: 'pi pi-fw pi-bookmark',
-                        items: [
-                            {
-                                label: 'Submenu 1.1',
-                                icon: 'pi pi-fw pi-bookmark',
-                                items: [
-                                    { label: 'Submenu 1.1.1', icon: 'pi pi-fw pi-bookmark' },
-                                    { label: 'Submenu 1.1.2', icon: 'pi pi-fw pi-bookmark' },
-                                    { label: 'Submenu 1.1.3', icon: 'pi pi-fw pi-bookmark' }
-                                ]
-                            },
-                            {
-                                label: 'Submenu 1.2',
-                                icon: 'pi pi-fw pi-bookmark',
-                                items: [{ label: 'Submenu 1.2.1', icon: 'pi pi-fw pi-bookmark' }]
-                            }
-                        ]
-                    },
-                    {
-                        label: 'Submenu 2',
-                        icon: 'pi pi-fw pi-bookmark',
-                        items: [
-                            {
-                                label: 'Submenu 2.1',
-                                icon: 'pi pi-fw pi-bookmark',
-                                items: [
-                                    { label: 'Submenu 2.1.1', icon: 'pi pi-fw pi-bookmark' },
-                                    { label: 'Submenu 2.1.2', icon: 'pi pi-fw pi-bookmark' }
-                                ]
-                            },
-                            {
-                                label: 'Submenu 2.2',
-                                icon: 'pi pi-fw pi-bookmark',
-                                items: [{ label: 'Submenu 2.2.1', icon: 'pi pi-fw pi-bookmark' }]
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                label: 'Get Started',
-                items: [
-                    {
-                        label: 'Documentation',
-                        icon: 'pi pi-fw pi-book',
-                        routerLink: ['/documentation']
-                    },
-                    {
-                        label: 'View Source',
-                        icon: 'pi pi-fw pi-github',
-                        url: 'https://github.com/primefaces/sakai-ng',
-                        target: '_blank'
-                    }
-                ]
-            }
-        ];
-        */
+        // Load menu initially
+        this.loadMenu();
 
-        // NEW MENU - Intelligent Inventory Orchestrator
-        this.model = [
-            {
-                label: 'Home',
-                items: [
-                    { 
-                        label: 'Dashboard', 
-                        icon: 'pi pi-fw pi-home', 
-                        routerLink: ['/'] 
-                    }
-                ]
-            },
-            {
-                label: 'Inventory',
-                icon: 'pi pi-fw pi-box',
-                items: [
-                    {
-                        label: 'Upload Data',
-                        icon: 'pi pi-fw pi-cloud-upload',
-                        routerLink: ['/inventory/upload']
-                    },
-                    {
-                        label: 'Stores',
-                        icon: 'pi pi-fw pi-building',
-                        routerLink: ['/inventory/stores']
-                    },
-                    {
-                        label: 'Products',
-                        icon: 'pi pi-fw pi-shopping-bag',
-                        routerLink: ['/inventory/products']
-                    },
-                    {
-                        label: 'Categories',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/inventory/categories']
-                    },
-                    {
-                        label: 'Stock Overview',
-                        icon: 'pi pi-fw pi-box',
-                        routerLink: ['/inventory/stock']
-                    },
-                    {
-                        label: 'Sales Analysis',
-                        icon: 'pi pi-fw pi-chart-bar',
-                        routerLink: ['/inventory/sales']
-                    },
-                    {
-                        label: 'Transfer Suggestions',
-                        icon: 'pi pi-fw pi-arrows-h',
-                        routerLink: ['/inventory/transfers']
-                    },
-                    {
-                        label: 'Reports',
-                        icon: 'pi pi-fw pi-file',
-                        routerLink: ['/inventory/reports']
-                    },
-                    {
-                        label: 'Settings',
-                        icon: 'pi pi-fw pi-cog',
-                        routerLink: ['/inventory/settings']
-                    }
-                ]
-            }
-        ];
+        // Subscribe to language changes to reload menu
+        this.langChangeSubscription = this.translateService.onLangChange.subscribe(() => {
+            this.loadMenu();
+        });
+    }
+
+    ngOnDestroy() {
+        // Unsubscribe to prevent memory leaks
+        if (this.langChangeSubscription) {
+            this.langChangeSubscription.unsubscribe();
+        }
+    }
+
+    private loadMenu() {
+        // Load translations for menu items
+        this.translateService.get([
+            'navigation.home',
+            'navigation.dashboard',
+            'navigation.inventory',
+            'navigation.uploadData',
+            'navigation.stores',
+            'navigation.products',
+            'navigation.categories',
+            'navigation.stockOverview',
+            'navigation.salesAnalysis',
+            'navigation.transferSuggestions',
+            'navigation.reports',
+            'navigation.settings'
+        ]).subscribe(translations => {
+            this.model = [
+                {
+                    label: translations['navigation.home'],
+                    items: [
+                        { 
+                            label: translations['navigation.dashboard'], 
+                            icon: 'pi pi-fw pi-home', 
+                            routerLink: ['/'] 
+                        }
+                    ]
+                },
+                {
+                    label: translations['navigation.inventory'],
+                    icon: 'pi pi-fw pi-box',
+                    items: [
+                        {
+                            label: translations['navigation.uploadData'],
+                            icon: 'pi pi-fw pi-cloud-upload',
+                            routerLink: ['/inventory/upload']
+                        },
+                        {
+                            label: translations['navigation.stores'],
+                            icon: 'pi pi-fw pi-building',
+                            routerLink: ['/inventory/stores']
+                        },
+                        {
+                            label: translations['navigation.products'],
+                            icon: 'pi pi-fw pi-shopping-bag',
+                            routerLink: ['/inventory/products']
+                        },
+                        {
+                            label: translations['navigation.categories'],
+                            icon: 'pi pi-fw pi-tags',
+                            routerLink: ['/inventory/categories']
+                        },
+                        {
+                            label: translations['navigation.stockOverview'],
+                            icon: 'pi pi-fw pi-box',
+                            routerLink: ['/inventory/stock']
+                        },
+                        {
+                            label: translations['navigation.salesAnalysis'],
+                            icon: 'pi pi-fw pi-chart-bar',
+                            routerLink: ['/inventory/sales']
+                        },
+                        {
+                            label: translations['navigation.transferSuggestions'],
+                            icon: 'pi pi-fw pi-arrows-h',
+                            routerLink: ['/inventory/transfers']
+                        },
+                        {
+                            label: translations['navigation.reports'],
+                            icon: 'pi pi-fw pi-file',
+                            routerLink: ['/inventory/reports']
+                        },
+                        {
+                            label: translations['navigation.settings'],
+                            icon: 'pi pi-fw pi-cog',
+                            routerLink: ['/inventory/settings']
+                        }
+                    ]
+                }
+            ];
+        });
     }
 }

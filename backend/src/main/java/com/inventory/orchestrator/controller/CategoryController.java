@@ -103,6 +103,7 @@ public class CategoryController {
         Category newCategory = new Category();
         newCategory.setName(category.getName().trim());
         newCategory.setDescription(category.getDescription() != null ? category.getDescription().trim() : null);
+        newCategory.setAllowStoreToStoreTransfer(category.getAllowStoreToStoreTransfer());
         
         Category savedCategory = categoryRepository.save(newCategory);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -135,6 +136,9 @@ public class CategoryController {
                 
                 existingCategory.setName(category.getName().trim());
                 existingCategory.setDescription(category.getDescription() != null ? category.getDescription().trim() : null);
+                if (category.getAllowStoreToStoreTransfer() != null) {
+                    existingCategory.setAllowStoreToStoreTransfer(category.getAllowStoreToStoreTransfer());
+                }
                 
                 Category updatedCategory = categoryRepository.save(existingCategory);
                 return ResponseEntity.ok(ApiResponse.success(updatedCategory, "Category updated successfully"));

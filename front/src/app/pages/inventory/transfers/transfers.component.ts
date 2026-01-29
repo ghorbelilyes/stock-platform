@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -20,30 +21,30 @@ interface LazyLoadEvent {
 @Component({
     selector: 'app-transfers',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule],
+    imports: [CommonModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
                     <div class="flex justify-between items-center mb-6">
                         <div>
-                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">Transfer Suggestions</h1>
-                            <p class="text-muted-color">AI-generated transfer recommendations to optimize inventory levels.</p>
+                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'transfers.title' | translate }}</h1>
+                            <p class="text-muted-color">{{ 'transfers.description' | translate }}</p>
                         </div>
-                        <p-button label="New Transfer" icon="pi pi-plus" (onClick)="showTransferWizard = true"></p-button>
+                        <p-button [label]="'transfers.newTransfer' | translate" icon="pi pi-plus" (onClick)="showTransferWizard = true"></p-button>
                     </div>
 
                     <p-table [value]="suggestions" [paginator]="true" [rows]="10" [loading]="loadingSuggestions">
                         <ng-template pTemplate="header">
                             <tr>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Priority</th>
-                                <th>Reason</th>
-                                <th>Confidence</th>
-                                <th>Action</th>
+                                <th>{{ 'common.from' | translate }}</th>
+                                <th>{{ 'common.to' | translate }}</th>
+                                <th>{{ 'common.product' | translate }}</th>
+                                <th>{{ 'common.quantity' | translate }}</th>
+                                <th>{{ 'common.priority' | translate }}</th>
+                                <th>{{ 'common.reason' | translate }}</th>
+                                <th>{{ 'common.confidence' | translate }}</th>
+                                <th>{{ 'common.action' | translate }}</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-suggestion>
@@ -62,7 +63,7 @@ interface LazyLoadEvent {
                                 <td>{{ suggestion.confidence }}%</td>
                                 <td>
                                     <p-button 
-                                        label="Transfer" 
+                                        [label]="'transfers.transfer' | translate" 
                                         icon="pi pi-check" 
                                         size="small"
                                         (onClick)="approveTransfer(suggestion.id)">
@@ -73,7 +74,7 @@ interface LazyLoadEvent {
                         <ng-template pTemplate="emptymessage">
                             <tr>
                                 <td colspan="8" class="text-center py-8 text-muted-color">
-                                    No transfer suggestions available. Upload data to generate AI-powered recommendations.
+                                    {{ 'transfers.noTransferSuggestions' | translate }}
                                 </td>
                             </tr>
                         </ng-template>
@@ -83,7 +84,7 @@ interface LazyLoadEvent {
 
             <div class="col-span-12">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Active Transfers</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'transfers.activeTransfers' | translate }}</h2>
                     <p-table 
                         [value]="transfers" 
                         [paginator]="true" 
@@ -99,31 +100,31 @@ interface LazyLoadEvent {
                             <div class="flex justify-between items-center">
                                 <span class="p-input-icon-left">
                                     <i class="pi pi-search"></i>
-                                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target), 'contains')" placeholder="Search by Store, Product, or Reason" />
+                                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target), 'contains')" [placeholder]="'common.search' | translate" />
                                 </span>
                             </div>
                         </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
                                 <th [pSortableColumn]="'createdAt'">
-                                    Date
+                                    {{ 'common.date' | translate }}
                                     <p-sortIcon [field]="'createdAt'"></p-sortIcon>
                                 </th>
                                 <th [pSortableColumn]="'sourceStoreName'">
-                                    From Store
+                                    {{ 'transfers.sourceStore' | translate }}
                                     <p-sortIcon [field]="'sourceStoreName'"></p-sortIcon>
                                 </th>
                                 <th [pSortableColumn]="'destinationStoreName'">
-                                    To Store
+                                    {{ 'transfers.destinationStore' | translate }}
                                     <p-sortIcon [field]="'destinationStoreName'"></p-sortIcon>
                                 </th>
-                                <th>Product</th>
+                                <th>{{ 'common.product' | translate }}</th>
                                 <th [pSortableColumn]="'items.quantity'">
-                                    Quantity
+                                    {{ 'common.quantity' | translate }}
                                     <p-sortIcon [field]="'items.quantity'"></p-sortIcon>
                                 </th>
                                 <th [pSortableColumn]="'notes'">
-                                    Reason
+                                    {{ 'transfers.notes' | translate }}
                                     <p-sortIcon [field]="'notes'"></p-sortIcon>
                                 </th>
                             </tr>
@@ -141,7 +142,7 @@ interface LazyLoadEvent {
                         <ng-template pTemplate="emptymessage">
                             <tr>
                                 <td colspan="6" class="text-center py-8 text-muted-color">
-                                    No transfers found. Create a transfer to get started.
+                                    {{ 'common.noData' | translate }}
                                 </td>
                             </tr>
                         </ng-template>
@@ -150,8 +151,8 @@ interface LazyLoadEvent {
             </div>
         </div>
 
-        <p-dialog [(visible)]="showTransferWizard" [modal]="true" [style]="{width: '50vw'}" header="Transfer Wizard">
-            <p>Transfer wizard implementation coming soon...</p>
+        <p-dialog [(visible)]="showTransferWizard" [modal]="true" [style]="{width: '50vw'}" [header]="'transfers.createTransfer' | translate">
+            <p>{{ 'transfers.wizardComingSoon' | translate }}</p>
         </p-dialog>
     `
 })

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { FormsModule } from '@angular/forms';
@@ -7,41 +8,41 @@ import { FormsModule } from '@angular/forms';
 @Component({
     selector: 'app-settings',
     standalone: true,
-    imports: [CommonModule, InputTextModule, ButtonModule, FormsModule],
+    imports: [CommonModule, TranslateModule, InputTextModule, ButtonModule, FormsModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Settings</h1>
-                    <p class="text-muted-color mb-6">Configure your inventory management preferences.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">{{ 'navigation.settings' | translate }}</h1>
+                    <p class="text-muted-color mb-6">{{ 'settings.description' | translate }}</p>
                     
                     <div class="grid grid-cols-12 gap-4">
                         <div class="col-span-12 md:col-span-6">
                             <div class="card">
-                                <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">General Settings</h2>
+                                <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'settings.general' | translate }}</h2>
                                 <div class="field mb-4">
-                                    <label class="block mb-2 font-medium">Default Reorder Point</label>
+                                    <label class="block mb-2 font-medium">{{ 'settings.defaultReorderPoint' | translate }}</label>
                                     <input pInputText type="number" [(ngModel)]="settings.defaultReorderPoint" class="w-full" />
                                 </div>
                                 <div class="field mb-4">
-                                    <label class="block mb-2 font-medium">Default Safety Stock</label>
+                                    <label class="block mb-2 font-medium">{{ 'settings.defaultSafetyStock' | translate }}</label>
                                     <input pInputText type="number" [(ngModel)]="settings.defaultSafetyStock" class="w-full" />
                                 </div>
-                                <p-button label="Save Settings" icon="pi pi-check"></p-button>
+                                <p-button [label]="'settings.saveSettings' | translate" icon="pi pi-check"></p-button>
                             </div>
                         </div>
                         <div class="col-span-12 md:col-span-6">
                             <div class="card">
-                                <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">AI Agent Settings</h2>
+                                <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'settings.aiAgent' | translate }}</h2>
                                 <div class="field mb-4">
-                                    <label class="block mb-2 font-medium">Confidence Threshold</label>
+                                    <label class="block mb-2 font-medium">{{ 'settings.confidenceThreshold' | translate }}</label>
                                     <input pInputText type="number" [(ngModel)]="settings.confidenceThreshold" class="w-full" />
                                 </div>
                                 <div class="field mb-4">
-                                    <label class="block mb-2 font-medium">Auto-approve transfers above</label>
+                                    <label class="block mb-2 font-medium">{{ 'settings.autoApproveThreshold' | translate }}</label>
                                     <input pInputText type="number" [(ngModel)]="settings.autoApproveThreshold" class="w-full" />
                                 </div>
-                                <p-button label="Save Settings" icon="pi pi-check"></p-button>
+                                <p-button [label]="'settings.saveSettings' | translate" icon="pi pi-check"></p-button>
                             </div>
                         </div>
                     </div>

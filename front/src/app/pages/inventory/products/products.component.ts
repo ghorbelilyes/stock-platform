@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -30,7 +31,7 @@ interface CategoryData {
     selector: 'app-products',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, TableModule, InputTextModule, ButtonModule,
+        CommonModule, FormsModule, TranslateModule, TableModule, InputTextModule, ButtonModule,
         DialogModule, TextareaModule, SelectModule, ToastModule, ConfirmDialogModule
     ],
     providers: [MessageService, ConfirmationService],
@@ -46,12 +47,12 @@ interface CategoryData {
                 <div class="card">
                     <div class="flex justify-between items-center mb-6">
                         <div>
-                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">Products</h1>
-                            <p class="text-muted-color">Manage all products in your inventory system with pagination, sorting, filtering, and search.</p>
+                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'navigation.products' | translate }}</h1>
+                            <p class="text-muted-color">{{ 'inventory.productsDescription' | translate }}</p>
                         </div>
                         <button 
                             pButton 
-                            label="Add Product" 
+                            [label]="'inventory.addProduct' | translate" 
                             icon="pi pi-plus" 
                             class="p-button-primary"
                             (click)="openAddDialog()">
@@ -227,14 +228,14 @@ interface CategoryData {
                         <button 
                             pButton 
                             type="button"
-                            label="Cancel" 
+                            [label]="'common.cancel' | translate" 
                             class="p-button-secondary"
                             (click)="showProductDialog = false">
                         </button>
                         <button 
                             pButton 
                             type="submit"
-                            label="Save" 
+                            [label]="'common.save' | translate" 
                             class="p-button-primary"
                             [disabled]="!productForm.name || productForm.name.trim() === '' || !productForm.codeBarre || productForm.codeBarre.trim() === ''">
                         </button>

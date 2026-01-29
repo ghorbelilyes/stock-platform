@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TagModule } from 'primeng/tag';
@@ -13,7 +14,7 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
 @Component({
     selector: 'app-upload',
     standalone: true,
-    imports: [CommonModule, ButtonModule, FileUploadModule, TagModule, DialogModule, SelectModule, FormsModule, MessageModule],
+    imports: [CommonModule, TranslateModule, ButtonModule, FileUploadModule, TagModule, DialogModule, SelectModule, FormsModule, MessageModule],
     styles: [`
         ::ng-deep .p-select {
             width: 100% !important;
@@ -36,21 +37,21 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">Upload Data</h1>
-                    <p class="text-muted-color">Upload your inventory data files to get started with AI-powered transfer suggestions.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'upload.title' | translate }}</h1>
+                    <p class="text-muted-color">{{ 'upload.description' | translate }}</p>
                 </div>
             </div>
 
             <div class="col-span-12 md:col-span-4">
                 <div class="card h-full">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Stores File</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'upload.storesFile' | translate }}</h2>
                     <div class="mb-4">
                         <p-fileupload 
                             mode="basic" 
                             name="stores[]" 
                             accept=".csv" 
                             (onSelect)="onFileSelect($any($event), 'stores')"
-                            chooseLabel="Upload CSV"
+                            [chooseLabel]="'upload.uploadCsv' | translate"
                             chooseIcon="pi pi-plus"
                             [auto]="true"
                             [showUploadButton]="false"
@@ -62,12 +63,12 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                         <div class="mt-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ uploadedFiles.stores.name }}</span>
-                                <p-tag [value]="uploadedFiles.stores.valid ? 'Valid' : 'Invalid'" 
+                                <p-tag [value]="uploadedFiles.stores.valid ? ('upload.valid' | translate) : ('upload.invalid' | translate)" 
                                        [severity]="uploadedFiles.stores.valid ? 'success' : 'danger'">
                                 </p-tag>
                             </div>
                             <div class="text-sm text-muted-color">
-                                Uploaded: {{ formatDate(uploadedFiles.stores.uploadedAt) | date:'short' }}
+                                {{ 'upload.uploaded' | translate }}: {{ formatDate(uploadedFiles.stores.uploadedAt) | date:'short' }}
                             </div>
                         </div>
                     }
@@ -87,14 +88,14 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
 
             <div class="col-span-12 md:col-span-4">
                 <div class="card h-full">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Stocks File</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'upload.stockFile' | translate }}</h2>
                     <div class="mb-4">
                         <p-fileupload 
                             mode="basic" 
                             name="stocks[]" 
                             accept=".csv" 
                             (onSelect)="onFileSelect($any($event), 'stocks')"
-                            chooseLabel="Upload CSV"
+                            [chooseLabel]="'upload.uploadCsv' | translate"
                             chooseIcon="pi pi-plus"
                             [auto]="true"
                             [showUploadButton]="false"
@@ -106,12 +107,12 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                         <div class="mt-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ uploadedFiles.stocks.name }}</span>
-                                <p-tag [value]="uploadedFiles.stocks.valid ? 'Valid' : 'Invalid'" 
+                                <p-tag [value]="uploadedFiles.stocks.valid ? ('upload.valid' | translate) : ('upload.invalid' | translate)" 
                                        [severity]="uploadedFiles.stocks.valid ? 'success' : 'danger'">
                                 </p-tag>
                             </div>
                             <div class="text-sm text-muted-color">
-                                Uploaded: {{ formatDate(uploadedFiles.stocks.uploadedAt) | date:'short' }}
+                                {{ 'upload.uploaded' | translate }}: {{ formatDate(uploadedFiles.stocks.uploadedAt) | date:'short' }}
                             </div>
                             @if (uploadedFiles.stocks.rowsProcessed !== undefined) {
                                 <div class="text-sm text-muted-color mt-1">
@@ -136,14 +137,14 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
 
             <div class="col-span-12 md:col-span-4">
                 <div class="card h-full">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Sales File</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'upload.salesFile' | translate }}</h2>
                     <div class="mb-4">
                         <p-fileupload 
                             mode="basic" 
                             name="sales[]" 
                             accept=".csv" 
                             (onSelect)="onFileSelect($any($event), 'sales')"
-                            chooseLabel="Upload CSV"
+                            [chooseLabel]="'upload.uploadCsv' | translate"
                             chooseIcon="pi pi-plus"
                             [auto]="true"
                             [showUploadButton]="false"
@@ -155,12 +156,12 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                         <div class="mt-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ uploadedFiles.sales.name }}</span>
-                                <p-tag [value]="uploadedFiles.sales.valid ? 'Valid' : 'Invalid'" 
+                                <p-tag [value]="uploadedFiles.sales.valid ? ('upload.valid' | translate) : ('upload.invalid' | translate)" 
                                        [severity]="uploadedFiles.sales.valid ? 'success' : 'danger'">
                                 </p-tag>
                             </div>
                             <div class="text-sm text-muted-color">
-                                Uploaded: {{ formatDate(uploadedFiles.sales.uploadedAt) | date:'short' }}
+                                {{ 'upload.uploaded' | translate }}: {{ formatDate(uploadedFiles.sales.uploadedAt) | date:'short' }}
                             </div>
                             @if (uploadedFiles.sales.rowsProcessed !== undefined) {
                                 <div class="text-sm text-muted-color mt-1">
@@ -186,14 +187,14 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
             <!-- Transfer File Card -->
             <div class="col-span-12 md:col-span-4">
                 <div class="card h-full">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Transfer File</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'upload.transfersFile' | translate }}</h2>
                     <div class="mb-4">
                         <p-fileupload 
                             mode="basic" 
                             name="transfers[]" 
                             accept=".csv" 
                             (onSelect)="onFileSelect($any($event), 'transfers')"
-                            chooseLabel="Upload CSV"
+                            [chooseLabel]="'upload.uploadCsv' | translate"
                             chooseIcon="pi pi-plus"
                             [auto]="true"
                             [showUploadButton]="false"
@@ -205,12 +206,12 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                         <div class="mt-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ uploadedFiles.transfers.name }}</span>
-                                <p-tag [value]="uploadedFiles.transfers.valid ? 'Valid' : 'Invalid'" 
+                                <p-tag [value]="uploadedFiles.transfers.valid ? ('upload.valid' | translate) : ('upload.invalid' | translate)" 
                                        [severity]="uploadedFiles.transfers.valid ? 'success' : 'danger'">
                                 </p-tag>
                             </div>
                             <div class="text-sm text-muted-color">
-                                Uploaded: {{ formatDate(uploadedFiles.transfers.uploadedAt) | date:'short' }}
+                                {{ 'upload.uploaded' | translate }}: {{ formatDate(uploadedFiles.transfers.uploadedAt) | date:'short' }}
                             </div>
                             @if (uploadedFiles.transfers.rowsProcessed !== undefined) {
                                 <div class="text-sm text-muted-color mt-1">
@@ -235,14 +236,14 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
 
             <div class="col-span-12 md:col-span-4">
                 <div class="card h-full">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Products File</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'upload.productsFile' | translate }}</h2>
                     <div class="mb-4">
                         <p-fileupload 
                             mode="basic" 
                             name="products[]" 
                             accept=".csv" 
                             (onSelect)="onFileSelect($any($event), 'products')"
-                            chooseLabel="Upload CSV"
+                            [chooseLabel]="'upload.uploadCsv' | translate"
                             chooseIcon="pi pi-plus"
                             [auto]="true"
                             [showUploadButton]="false"
@@ -254,12 +255,12 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                         <div class="mt-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-medium">{{ uploadedFiles.products.name }}</span>
-                                <p-tag [value]="uploadedFiles.products.valid ? 'Valid' : 'Invalid'" 
+                                <p-tag [value]="uploadedFiles.products.valid ? ('upload.valid' | translate) : ('upload.invalid' | translate)" 
                                        [severity]="uploadedFiles.products.valid ? 'success' : 'danger'">
                                 </p-tag>
                             </div>
                             <div class="text-sm text-muted-color">
-                                Uploaded: {{ formatDate(uploadedFiles.products.uploadedAt) | date:'short' }}
+                                {{ 'upload.uploaded' | translate }}: {{ formatDate(uploadedFiles.products.uploadedAt) | date:'short' }}
                             </div>
                             @if (uploadedFiles.products.rowsProcessed !== undefined) {
                                 <div class="text-sm text-muted-color mt-1">
@@ -289,18 +290,18 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
             [modal]="true" 
             [style]="{ width: '700px', maxHeight: '80vh' }"
             [contentStyle]="{ 'max-height': '60vh', 'overflow-y': 'auto' }"
-            header="Map Columns"
+            [header]="'upload.mapping' | translate"
             [closable]="true">
             <ng-template #content>
                 @if (currentMapping && fileHeaders.length > 0) {
                     <div class="flex flex-col gap-4">
-                        <p class="text-muted-color mb-2">Map your file columns to backend columns. Required columns are marked with <span class="text-red-500">*</span></p>
+                        <p class="text-muted-color mb-2">{{ 'upload.mappingDescription' | translate }} <span class="text-red-500">*</span></p>
                         <div class="grid grid-cols-12 gap-4 mb-2 pb-2 border-b border-surface-border">
                             <div class="col-span-6">
-                                <label class="block text-sm font-semibold text-surface-900 dark:text-surface-0">File Column</label>
+                                <label class="block text-sm font-semibold text-surface-900 dark:text-surface-0">{{ 'upload.fileColumn' | translate }}</label>
                             </div>
                             <div class="col-span-6">
-                                <label class="block text-sm font-semibold text-surface-900 dark:text-surface-0">Backend Column</label>
+                                <label class="block text-sm font-semibold text-surface-900 dark:text-surface-0">{{ 'upload.backendColumn' | translate }}</label>
                             </div>
                         </div>
                         @for (mapping of currentMapping.mappings; track mapping.backendColumn) {
@@ -309,7 +310,7 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                                     <p-select 
                                         [(ngModel)]="mapping.fileColumn"
                                         [options]="getFileColumnOptions()"
-                                        placeholder="Select file column"
+                                        [placeholder]="'upload.selectFileColumn' | translate"
                                         appendTo="body"
                                         [style]="{ 'width': '100%', 'min-width': '250px' }">
                                     </p-select>
@@ -330,8 +331,8 @@ import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shar
                 }
             </ng-template>
             <ng-template #footer>
-                <p-button label="Cancel" icon="pi pi-times" text (click)="cancelMapping()" />
-                <p-button label="Save & Upload" icon="pi pi-check" (click)="saveMapping()" [loading]="uploading" />
+                <p-button [label]="'common.cancel' | translate" icon="pi pi-times" text (click)="cancelMapping()" />
+                <p-button [label]="'upload.saveAndUpload' | translate" icon="pi pi-check" (click)="saveMapping()" [loading]="uploading" />
             </ng-template>
         </p-dialog>
     `

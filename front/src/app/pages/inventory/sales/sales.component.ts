@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
 import { InputTextModule } from 'primeng/inputtext';
@@ -32,38 +33,38 @@ interface SalesData {
 @Component({
     selector: 'app-sales',
     standalone: true,
-    imports: [CommonModule, TableModule, ChartModule, InputTextModule, DatePickerModule, ButtonModule, FormsModule],
+    imports: [CommonModule, TranslateModule, TableModule, ChartModule, InputTextModule, DatePickerModule, ButtonModule, FormsModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Sales Analysis</h1>
-                    <p class="text-muted-color mb-6">Analyze sales trends and performance across stores.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">{{ 'sales.title' | translate }}</h1>
+                    <p class="text-muted-color mb-6">{{ 'sales.description' | translate }}</p>
                     
                     <div class="flex flex-wrap gap-4 items-end mb-6 p-4 border border-surface-border rounded bg-surface-0 dark:bg-surface-800">
                         <div class="flex-1 min-w-[200px]">
-                            <label for="startDate" class="block text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">From Date</label>
+                            <label for="startDate" class="block text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">{{ 'common.fromDate' | translate }}</label>
                             <p-datepicker 
                                 id="startDate"
                                 [(ngModel)]="startDate" 
                                 [showIcon]="true"
                                 [showButtonBar]="true"
                                 dateFormat="yy-mm-dd"
-                                placeholder="Select start date"
+                                [placeholder]="'common.selectStartDate' | translate"
                                 [maxDate]="endDate || today"
                                 styleClass="w-full"
                                 inputStyleClass="w-full">
                             </p-datepicker>
                         </div>
                         <div class="flex-1 min-w-[200px]">
-                            <label for="endDate" class="block text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">To Date</label>
+                            <label for="endDate" class="block text-sm font-medium text-surface-900 dark:text-surface-0 mb-2">{{ 'common.toDate' | translate }}</label>
                             <p-datepicker 
                                 id="endDate"
                                 [(ngModel)]="endDate" 
                                 [showIcon]="true"
                                 [showButtonBar]="true"
                                 dateFormat="yy-mm-dd"
-                                placeholder="Select end date"
+                                [placeholder]="'common.selectEndDate' | translate"
                                 [minDate]="startDate"
                                 [maxDate]="today"
                                 styleClass="w-full"
@@ -72,13 +73,13 @@ interface SalesData {
                         </div>
                         <div class="flex gap-2">
                             <p-button 
-                                label="Apply Filter" 
+                                [label]="'common.applyFilter' | translate" 
                                 icon="pi pi-filter" 
                                 (onClick)="applyDateFilter()"
                                 [disabled]="!startDate || !endDate">
                             </p-button>
                             <p-button 
-                                label="Reset" 
+                                [label]="'common.reset' | translate" 
                                 icon="pi pi-refresh" 
                                 severity="secondary"
                                 (onClick)="resetDateFilter()">
@@ -90,14 +91,14 @@ interface SalesData {
 
             <div class="col-span-12">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Sales Trends</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'sales.salesTrends' | translate }}</h2>
                     <p-chart type="line" [data]="chartData" [options]="chartOptions" [style]="{height: '300px'}"></p-chart>
                 </div>
             </div>
 
             <div class="col-span-12">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Recent Sales</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'sales.recentSales' | translate }}</h2>
                     <p-table 
                         [value]="recentSales" 
                         [paginator]="true" 
@@ -124,7 +125,7 @@ interface SalesData {
                                         type="text" 
                                         [(ngModel)]="globalSearch"
                                         (input)="onGlobalSearch($event)"
-                                        placeholder="Search by Store, Product, or City" 
+                                        [placeholder]="'common.search' | translate" 
                                         class="w-full"
                                     />
                                 </span>
@@ -134,14 +135,14 @@ interface SalesData {
                             <tr>
                                 <th [pSortableColumn]="'rangeDate'">
                                     <div class="flex items-center gap-2">
-                                        <span>Date</span>
+                                        <span>{{ 'common.date' | translate }}</span>
                                         <p-sortIcon [field]="'rangeDate'"></p-sortIcon>
                                     </div>
                                 </th>
                                 <th [pSortableColumn]="'store.name'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Store Name</span>
+                                            <span>{{ 'sales.store' | translate }}</span>
                                             <p-sortIcon [field]="'store.name'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="store.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -150,7 +151,7 @@ interface SalesData {
                                 <th [pSortableColumn]="'store.city'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>City</span>
+                                            <span>{{ 'common.city' | translate }}</span>
                                             <p-sortIcon [field]="'store.city'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="store.city" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -159,7 +160,7 @@ interface SalesData {
                                 <th [pSortableColumn]="'product.name'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Product Name</span>
+                                            <span>{{ 'common.product' | translate }}</span>
                                             <p-sortIcon [field]="'product.name'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="product.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -167,7 +168,7 @@ interface SalesData {
                                 </th>
                                 <th [pSortableColumn]="'quantity'">
                                     <div class="flex items-center gap-2">
-                                        <span>Quantity</span>
+                                        <span>{{ 'common.quantity' | translate }}</span>
                                         <p-sortIcon [field]="'quantity'"></p-sortIcon>
                                     </div>
                                 </th>
@@ -186,8 +187,7 @@ interface SalesData {
                             <tr>
                                 <td colspan="5" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
-                                        <p class="mb-2">No sales data found.</p>
-                                        <p class="text-sm" *ngIf="globalSearch">Try adjusting your search query.</p>
+                                        <p class="mb-2">{{ 'common.noData' | translate }}</p>
                                     </div>
                                 </td>
                             </tr>
