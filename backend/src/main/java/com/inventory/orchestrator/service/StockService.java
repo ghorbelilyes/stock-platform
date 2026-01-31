@@ -1,8 +1,10 @@
 package com.inventory.orchestrator.service;
 
+import com.inventory.orchestrator.dto.StockView;
 import com.inventory.orchestrator.entity.Stock;
 import com.inventory.orchestrator.entity.StockId;
 import com.inventory.orchestrator.repository.StockRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,5 +73,24 @@ public class StockService {
     @Transactional(readOnly = true)
     public List<Stock> findAll() {
         return stockRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockView> findStocksWithQuantityLessThan(int maxQuantity, int limit) {
+        int size = Math.min(Math.max(1, limit), 500);
+        return stockRepository.findViewsWithQuantityLessThan(maxQuantity, PageRequest.of(0, size)).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockView> findStocksWithQuantityGreaterThan(int minQuantity, int limit) {
+        int size = Math.min(Math.max(1, limit), 500);
+        return stockRepository.findViewsWithQuantityGreaterThan(minQuantity, PageRequest.of(0, size)).getContent();
+    }
+
+    /** Quantity strictly between minExclusive and maxExclusive (e.g. more than 100 and less than 150). */
+    @Transactional(readOnly = true)
+    public List<StockView> findStocksWithQuantityBetween(int minExclusive, int maxExclusive, int limit) {
+        int size = Math.min(Math.max(1, limit), 500);
+        return stockRepository.findViewsWithQuantityBetween(minExclusive, maxExclusive, PageRequest.of(0, size)).getContent();
     }
 }

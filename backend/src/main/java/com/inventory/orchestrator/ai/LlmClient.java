@@ -53,6 +53,7 @@ public class LlmClient {
             log.warn("LLM not configured: endpoint or api-key missing");
             return null;
         }
+        log.info("LLM call: outgoing (prompt length={}, user length={})", systemPrompt != null ? systemPrompt.length() : 0, userMessage != null ? userMessage.length() : 0);
         try {
             if (isGemini()) {
                 return chatGemini(systemPrompt, userMessage);
