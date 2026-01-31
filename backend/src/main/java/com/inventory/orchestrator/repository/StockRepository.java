@@ -68,4 +68,40 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
         countQuery = "SELECT COUNT(s) FROM Stock s WHERE s.idStore = :storeId AND s.idProduct = :productId"
     )
     Page<StockView> findByIdStoreAndIdProductView(@Param("storeId") Long storeId, @Param("productId") Long productId, Pageable pageable);
+
+    @Query(
+        value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
+            "s.idStore, s.idProduct, s.quantity, " +
+            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+            "p.id, p.codeBarre, p.name, p.description" +
+        ") " +
+        "FROM Stock s JOIN s.store st JOIN s.product p " +
+        "WHERE s.quantity < :maxQuantity ORDER BY s.quantity ASC",
+        countQuery = "SELECT COUNT(s) FROM Stock s WHERE s.quantity < :maxQuantity"
+    )
+    Page<StockView> findViewsWithQuantityLessThan(@Param("maxQuantity") int maxQuantity, Pageable pageable);
+
+    @Query(
+        value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
+            "s.idStore, s.idProduct, s.quantity, " +
+            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+            "p.id, p.codeBarre, p.name, p.description" +
+        ") " +
+        "FROM Stock s JOIN s.store st JOIN s.product p " +
+        "WHERE s.quantity > :minQuantity ORDER BY s.quantity DESC",
+        countQuery = "SELECT COUNT(s) FROM Stock s WHERE s.quantity > :minQuantity"
+    )
+    Page<StockView> findViewsWithQuantityGreaterThan(@Param("minQuantity") int minQuantity, Pageable pageable);
+
+    @Query(
+        value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
+            "s.idStore, s.idProduct, s.quantity, " +
+            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+            "p.id, p.codeBarre, p.name, p.description" +
+        ") " +
+        "FROM Stock s JOIN s.store st JOIN s.product p " +
+        "WHERE s.quantity > :minQuantity AND s.quantity < :maxQuantity ORDER BY s.quantity ASC",
+        countQuery = "SELECT COUNT(s) FROM Stock s WHERE s.quantity > :minQuantity AND s.quantity < :maxQuantity"
+    )
+    Page<StockView> findViewsWithQuantityBetween(@Param("minQuantity") int minQuantity, @Param("maxQuantity") int maxQuantity, Pageable pageable);
 }

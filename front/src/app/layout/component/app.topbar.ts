@@ -2,14 +2,16 @@ import { Component } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
+import { LanguageSwitcherComponent } from '../../shared/components/language-switcher/language-switcher.component';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator],
+    imports: [RouterModule, CommonModule, TranslateModule, StyleClassModule, AppConfigurator, LanguageSwitcherComponent],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -33,12 +35,13 @@ import { LayoutService } from '../service/layout.service';
                         />
                     </g>
                 </svg>
-                <span>Intelligent Inventory Orchestrator</span>
+                <span>{{ 'app.title' | translate }}</span>
             </a>
         </div>
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
+                <app-language-switcher></app-language-switcher>
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
@@ -66,15 +69,15 @@ import { LayoutService } from '../service/layout.service';
                 <div class="layout-topbar-menu-content">
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
+                        <span>{{ 'navigation.calendar' | translate }}</span>
                     </button>
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
+                        <span>{{ 'navigation.messages' | translate }}</span>
                     </button>
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-user"></i>
-                        <span>Profile</span>
+                        <span>{{ 'navigation.profile' | translate }}</span>
                     </button>
                 </div>
             </div>

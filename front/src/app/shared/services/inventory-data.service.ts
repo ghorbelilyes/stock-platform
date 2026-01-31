@@ -319,7 +319,7 @@ export class InventoryDataService {
     }
 
     // Create category
-    createCategory(category: { name: string; description?: string }): Observable<any> {
+    createCategory(category: { name: string; description?: string; allowStoreToStoreTransfer?: boolean }): Observable<any> {
         return this.http.post<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}`, category)
             .pipe(
                 map(response => response.data),
@@ -331,7 +331,7 @@ export class InventoryDataService {
     }
 
     // Update category
-    updateCategory(id: number, category: { name: string; description?: string }): Observable<any> {
+    updateCategory(id: number, category: { name: string; description?: string; allowStoreToStoreTransfer?: boolean }): Observable<any> {
         return this.http.put<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.categories}/${id}`, category)
             .pipe(
                 map(response => response.data),

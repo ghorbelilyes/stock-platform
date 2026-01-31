@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
@@ -18,13 +19,13 @@ interface StoreData {
 @Component({
     selector: 'app-stores',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, TagModule, InputTextModule],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, TagModule, InputTextModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Stores & Warehouses</h1>
-                    <p class="text-muted-color mb-6">Manage all stores and warehouses in your inventory system with pagination, sorting, filtering, and search.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">{{ 'stores.title' | translate }}</h1>
+                    <p class="text-muted-color mb-6">{{ 'stores.description' | translate }}</p>
                     
                     <p-table 
                         [value]="storesData" 
@@ -52,7 +53,7 @@ interface StoreData {
                                         type="text" 
                                         [(ngModel)]="globalSearch"
                                         (input)="onGlobalSearch($event)"
-                                        placeholder="Search by Name, City, Type, or Serial Number" 
+                                        [placeholder]="'stores.searchPlaceholder' | translate" 
                                         class="w-full"
                                     />
                                 </span>
@@ -63,7 +64,7 @@ interface StoreData {
                                 <th [pSortableColumn]="'serialNumber'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Serial Number</span>
+                                            <span>{{ 'stores.serialNumber' | translate }}</span>
                                             <p-sortIcon [field]="'serialNumber'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="serialNumber" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -72,7 +73,7 @@ interface StoreData {
                                 <th [pSortableColumn]="'name'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Name</span>
+                                            <span>{{ 'common.name' | translate }}</span>
                                             <p-sortIcon [field]="'name'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -81,7 +82,7 @@ interface StoreData {
                                 <th [pSortableColumn]="'city'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>City</span>
+                                            <span>{{ 'common.city' | translate }}</span>
                                             <p-sortIcon [field]="'city'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="city" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -90,7 +91,7 @@ interface StoreData {
                                 <th [pSortableColumn]="'type'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Type</span>
+                                            <span>{{ 'common.type' | translate }}</span>
                                             <p-sortIcon [field]="'type'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="type" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -98,7 +99,7 @@ interface StoreData {
                                 </th>
                                 <th [pSortableColumn]="'leadTimeDays'">
                                     <div class="flex items-center gap-2">
-                                        <span>Lead Time (Days)</span>
+                                        <span>{{ 'stores.leadTimeDays' | translate }}</span>
                                         <p-sortIcon [field]="'leadTimeDays'"></p-sortIcon>
                                     </div>
                                 </th>

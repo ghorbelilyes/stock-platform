@@ -1,0 +1,241 @@
+2026-01-31T11:37:46.070+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.controller.AiChatController        : AI chat request: message length=5
+2026-01-31T11:37:46.071+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=5
+2026-01-31T11:37:46.071+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:37:46.071+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:37:46.071+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: path=GREETING (no LLM), returning static reply
+2026-01-31T11:37:59.049+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.controller.AiChatController        : AI chat request: message length=12
+2026-01-31T11:37:59.050+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=12
+2026-01-31T11:37:59.050+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:37:59.050+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:37:59.050+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:37:59.050+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=12)
+2026-01-31T11:38:02.356+01:00 DEBUG 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : LLM response length=161
+2026-01-31T11:38:02.357+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=12, response length=161
+2026-01-31T11:38:02.357+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=161
+2026-01-31T11:39:22.420+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.controller.AiChatController        : AI chat request: message length=27
+2026-01-31T11:39:22.421+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=27
+2026-01-31T11:39:22.421+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:39:22.421+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:39:22.421+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:39:22.421+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=27)
+2026-01-31T11:39:24.054+01:00 DEBUG 446217 --- [http-nio-8080-exec-9] c.inventory.orchestrator.ai.LlmClient    : LLM response length=157
+2026-01-31T11:39:24.054+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=27, response length=157
+2026-01-31T11:39:24.054+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=157
+2026-01-31T11:40:57.687+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.controller.AiChatController        : AI chat request: message length=18
+2026-01-31T11:40:57.688+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=18
+2026-01-31T11:40:57.688+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:40:57.688+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:40:57.688+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:40:57.688+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=18)
+2026-01-31T11:40:59.404+01:00 DEBUG 446217 --- [http-nio-8080-exec-1] c.inventory.orchestrator.ai.LlmClient    : LLM response length=168
+2026-01-31T11:40:59.404+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=18, response length=168
+2026-01-31T11:40:59.404+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=168
+2026-01-31T11:41:10.089+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.controller.AiChatController        : AI chat request: message length=16
+2026-01-31T11:41:10.089+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=16
+2026-01-31T11:41:10.090+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:41:10.090+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:41:10.090+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:41:10.090+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=16)
+2026-01-31T11:41:13.755+01:00 DEBUG 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : LLM response length=229
+2026-01-31T11:41:13.755+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=16, response length=229
+2026-01-31T11:41:13.755+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=229
+2026-01-31T11:41:34.295+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.controller.AiChatController        : AI chat request: message length=33
+2026-01-31T11:41:34.296+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=33
+2026-01-31T11:41:34.297+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:41:34.297+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:41:34.297+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:41:34.297+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=33)
+2026-01-31T11:41:35.954+01:00 DEBUG 446217 --- [http-nio-8080-exec-3] c.inventory.orchestrator.ai.LlmClient    : LLM response length=224
+2026-01-31T11:41:35.954+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=33, response length=224
+2026-01-31T11:41:35.954+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=224
+2026-01-31T11:41:50.791+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.controller.AiChatController        : AI chat request: message length=16
+2026-01-31T11:41:50.793+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=16
+2026-01-31T11:41:50.793+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:41:50.793+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:41:50.794+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:41:50.794+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=16)
+2026-01-31T11:41:53.158+01:00 DEBUG 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : LLM response length=206
+2026-01-31T11:41:53.158+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=16, response length=206
+2026-01-31T11:41:53.158+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=206
+2026-01-31T11:42:10.031+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.controller.AiChatController        : AI chat request: message length=18
+2026-01-31T11:42:10.032+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=18
+2026-01-31T11:42:10.032+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:42:10.032+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:42:10.032+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:42:10.032+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=18)
+2026-01-31T11:42:12.018+01:00 DEBUG 446217 --- [http-nio-8080-exec-5] c.inventory.orchestrator.ai.LlmClient    : LLM response length=132
+2026-01-31T11:42:12.019+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=18, response length=132
+2026-01-31T11:42:12.019+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=132
+2026-01-31T11:43:43.140+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.controller.AiChatController        : AI chat request: message length=16
+2026-01-31T11:43:43.141+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=16
+2026-01-31T11:43:43.142+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T11:43:43.142+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T11:43:43.142+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T11:43:43.143+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=16)
+2026-01-31T11:43:45.004+01:00 DEBUG 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : LLM response length=116
+2026-01-31T11:43:45.005+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=16, response length=116
+2026-01-31T11:43:45.005+01:00  INFO 446217 --- [http-nio-8080-exec-7] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=116
+2026-01-31T11:44:17.729+01:00  INFO 446217 --- [http-nio-8080-exec-8] c.i.o.controller.AiChatController        : AI chat request: message length=37
+2026-01-31T11:44:17.730+01:00  INFO 446217 --- [http-nio-8080-exec-8] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=37
+2026-01-31T11:44:17.731+01:00  INFO 446217 --- [http-nio-8080-exec-8] c.i.o.ai.AiOrchestratorService           : AI decision: intent=QUERY_STOCK
+2026-01-31T11:44:17.731+01:00  INFO 446217 --- [http-nio-8080-exec-8] c.i.o.ai.AiOrchestratorService           : AI decision: path=KEYWORD_QUERY_STOCK (less/more/between), no LLM for query
+2026-01-31T11:44:17.739+01:00 DEBUG 446217 --- [http-nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        s1_0.id_store,
+        s1_0.id_product,
+        s1_0.quantity,
+        s2_0.id,
+        s2_0.serial_number,
+        s2_0.name,
+        s2_0.city,
+        s2_0.type,
+        s2_0.lead_time_days,
+        p1_0.id,
+        p1_0.code_barre,
+        p1_0.name,
+        p1_0.description 
+    from
+        stock s1_0 
+    join
+        store s2_0 
+            on s2_0.id=s1_0.id_store 
+    join
+        product p1_0 
+            on p1_0.id=s1_0.id_product 
+    where
+        s1_0.quantity<? 
+    order by
+        s1_0.quantity 
+    fetch
+        first ? rows only
+2026-01-31T11:44:31.647+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.controller.AiChatController        : AI chat request: message length=37
+2026-01-31T11:44:31.648+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=37
+2026-01-31T11:44:31.648+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: intent=QUERY_STOCK
+2026-01-31T11:44:31.648+01:00  INFO 446217 --- [http-nio-8080-exec-9] c.i.o.ai.AiOrchestratorService           : AI decision: path=KEYWORD_QUERY_STOCK (less/more/between), no LLM for query
+2026-01-31T11:44:31.650+01:00 DEBUG 446217 --- [http-nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        s1_0.id_store,
+        s1_0.id_product,
+        s1_0.quantity,
+        s2_0.id,
+        s2_0.serial_number,
+        s2_0.name,
+        s2_0.city,
+        s2_0.type,
+        s2_0.lead_time_days,
+        p1_0.id,
+        p1_0.code_barre,
+        p1_0.name,
+        p1_0.description 
+    from
+        stock s1_0 
+    join
+        store s2_0 
+            on s2_0.id=s1_0.id_store 
+    join
+        product p1_0 
+            on p1_0.id=s1_0.id_product 
+    where
+        s1_0.quantity<? 
+    order by
+        s1_0.quantity 
+    fetch
+        first ? rows only
+2026-01-31T12:03:52.157+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.controller.AiChatController        : AI chat request: message length=5
+2026-01-31T12:03:52.160+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=5
+2026-01-31T12:03:52.160+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T12:03:52.160+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T12:03:52.160+01:00  INFO 446217 --- [http-nio-8080-exec-1] c.i.o.ai.AiOrchestratorService           : AI decision: path=GREETING (no LLM), returning static reply
+2026-01-31T12:04:36.147+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.controller.AiChatController        : AI chat request: message length=31
+2026-01-31T12:04:36.148+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=31
+2026-01-31T12:04:36.149+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T12:04:36.149+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T12:04:36.149+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T12:04:36.149+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=31)
+2026-01-31T12:04:37.845+01:00 DEBUG 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : LLM response length=209
+2026-01-31T12:04:37.845+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=31, response length=209
+2026-01-31T12:04:37.845+01:00  INFO 446217 --- [http-nio-8080-exec-2] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=209
+2026-01-31T12:05:10.332+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.controller.AiChatController        : AI chat request: message length=22
+2026-01-31T12:05:10.333+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=22
+2026-01-31T12:05:10.333+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: intent=QUERY_STOCK
+2026-01-31T12:05:10.333+01:00  INFO 446217 --- [http-nio-8080-exec-3] c.i.o.ai.AiOrchestratorService           : AI decision: path=KEYWORD_QUERY_STOCK (less/more/between), no LLM for query
+2026-01-31T12:05:10.340+01:00 DEBUG 446217 --- [http-nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        s1_0.id_store,
+        s1_0.id_product,
+        s1_0.quantity,
+        s2_0.id,
+        s2_0.serial_number,
+        s2_0.name,
+        s2_0.city,
+        s2_0.type,
+        s2_0.lead_time_days,
+        p1_0.id,
+        p1_0.code_barre,
+        p1_0.name,
+        p1_0.description 
+    from
+        stock s1_0 
+    join
+        store s2_0 
+            on s2_0.id=s1_0.id_store 
+    join
+        product p1_0 
+            on p1_0.id=s1_0.id_product 
+    where
+        s1_0.quantity>? 
+    order by
+        s1_0.quantity desc 
+    fetch
+        first ? rows only
+2026-01-31T12:05:13.701+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.controller.AiChatController        : AI chat request: message length=3
+2026-01-31T12:05:13.702+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=3
+2026-01-31T12:05:13.702+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T12:05:13.702+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T12:05:13.703+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T12:05:13.703+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=3)
+2026-01-31T12:05:16.376+01:00 DEBUG 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : LLM response length=138
+2026-01-31T12:05:16.376+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=3, response length=138
+2026-01-31T12:05:16.376+01:00  INFO 446217 --- [http-nio-8080-exec-4] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=138
+2026-01-31T12:05:24.633+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.controller.AiChatController        : AI chat request: message length=22
+2026-01-31T12:05:24.633+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=22
+2026-01-31T12:05:24.634+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: intent=QUERY_STOCK
+2026-01-31T12:05:24.634+01:00  INFO 446217 --- [http-nio-8080-exec-5] c.i.o.ai.AiOrchestratorService           : AI decision: path=KEYWORD_QUERY_STOCK (less/more/between), no LLM for query
+2026-01-31T12:05:24.634+01:00 DEBUG 446217 --- [http-nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        s1_0.id_store,
+        s1_0.id_product,
+        s1_0.quantity,
+        s2_0.id,
+        s2_0.serial_number,
+        s2_0.name,
+        s2_0.city,
+        s2_0.type,
+        s2_0.lead_time_days,
+        p1_0.id,
+        p1_0.code_barre,
+        p1_0.name,
+        p1_0.description 
+    from
+        stock s1_0 
+    join
+        store s2_0 
+            on s2_0.id=s1_0.id_store 
+    join
+        product p1_0 
+            on p1_0.id=s1_0.id_product 
+    where
+        s1_0.quantity>? 
+    order by
+        s1_0.quantity desc 
+    fetch
+        first ? rows only
+2026-01-31T12:06:16.940+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.controller.AiChatController        : AI chat request: message length=16
+2026-01-31T12:06:16.941+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: chat request, message length=16
+2026-01-31T12:06:16.942+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: intent=UNKNOWN
+2026-01-31T12:06:16.942+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN, checking hybrid then handleUnknown
+2026-01-31T12:06:16.942+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: path=UNKNOWN_CHAT, calling LLM for general reply
+2026-01-31T12:06:16.942+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.inventory.orchestrator.ai.LlmClient    : LLM call: outgoing (prompt length=446, user length=16)
+2026-01-31T12:06:18.381+01:00 DEBUG 446217 --- [http-nio-8080-exec-6] c.inventory.orchestrator.ai.LlmClient    : LLM response length=91
+2026-01-31T12:06:18.381+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.inventory.orchestrator.ai.LlmClient    : AI LLM (Gemini): prompt length=16, response length=91
+2026-01-31T12:06:18.381+01:00  INFO 446217 --- [http-nio-8080-exec-6] c.i.o.ai.AiOrchestratorService           : AI decision: UNKNOWN_CHAT LLM reply received, length=91

@@ -2,6 +2,10 @@
 -- This script runs automatically when Spring Boot starts (only if tables are empty)
 -- To disable: set spring.sql.init.mode=never in application.properties
 
+-- Add allow_store_to_store_transfer column to category table if it doesn't exist
+ALTER TABLE category 
+ADD COLUMN IF NOT EXISTS allow_store_to_store_transfer BOOLEAN NOT NULL DEFAULT true;
+
 -- Insert Stores (only if table is empty)
 -- ID equals serial_number (as Long) - auto-derived
 INSERT INTO store (id, serial_number, name, city, type, lead_time_days)

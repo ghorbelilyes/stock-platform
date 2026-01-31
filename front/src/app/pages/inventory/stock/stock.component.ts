@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,13 +30,13 @@ interface StockData {
 @Component({
     selector: 'app-stock',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, TagModule, InputTextModule, StatusPillComponent],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, TagModule, InputTextModule, StatusPillComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">Stock Overview</h1>
-                    <p class="text-muted-color mb-6">Monitor inventory levels across all stores and warehouses with pagination, sorting, filtering, and search.</p>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">{{ 'stock.title' | translate }}</h1>
+                    <p class="text-muted-color mb-6">{{ 'stock.description' | translate }}</p>
                     
                     <p-table 
                         [value]="stockData" 
@@ -63,7 +64,7 @@ interface StockData {
                                         type="text" 
                                         [(ngModel)]="globalSearch"
                                         (input)="onGlobalSearch($event)"
-                                        placeholder="Search by Store, Product, or City" 
+                                        [placeholder]="'stock.searchPlaceholder' | translate" 
                                         class="w-full"
                                     />
                                 </span>
@@ -74,7 +75,7 @@ interface StockData {
                                 <th [pSortableColumn]="'store.name'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Store Name</span>
+                                            <span>{{ 'stock.storeName' | translate }}</span>
                                             <p-sortIcon [field]="'store.name'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="store.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -83,7 +84,7 @@ interface StockData {
                                 <th [pSortableColumn]="'store.city'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>City</span>
+                                            <span>{{ 'common.city' | translate }}</span>
                                             <p-sortIcon [field]="'store.city'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="store.city" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -92,7 +93,7 @@ interface StockData {
                                 <th [pSortableColumn]="'store.type'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Type</span>
+                                            <span>{{ 'common.type' | translate }}</span>
                                             <p-sortIcon [field]="'store.type'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="store.type" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -101,7 +102,7 @@ interface StockData {
                                 <th [pSortableColumn]="'product.name'">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-2">
-                                            <span>Product Name</span>
+                                            <span>{{ 'stock.productName' | translate }}</span>
                                             <p-sortIcon [field]="'product.name'"></p-sortIcon>
                                         </div>
                                         <p-columnFilter type="text" field="product.name" display="menu" [showMatchModes]="false" matchMode="contains"></p-columnFilter>
@@ -109,19 +110,18 @@ interface StockData {
                                 </th>
                                 <th [pSortableColumn]="'quantity'">
                                     <div class="flex items-center gap-2">
-                                        <span>Quantity</span>
+                                        <span>{{ 'common.quantity' | translate }}</span>
                                         <p-sortIcon [field]="'quantity'"></p-sortIcon>
                                     </div>
                                 </th>
-                                <th>Status</th>
+                                <th>{{ 'common.status' | translate }}</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
                                 <td colspan="6" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
-                                        <p class="mb-2">No stock data found.</p>
-                                        <p class="text-sm" *ngIf="globalSearch">Try adjusting your search query.</p>
+                                        <p class="mb-2">{{ 'common.noData' | translate }}</p>
                                     </div>
                                 </td>
                             </tr>
@@ -151,6 +151,7 @@ interface StockData {
 })
 export class StockComponent implements OnInit {
     private inventoryService = inject(InventoryDataService);
+    private translateService = inject(TranslateService);
     stockData: StockData[] = [];
     loading = false;
     totalRecords = 0;
@@ -308,9 +309,9 @@ export class StockComponent implements OnInit {
 
     getStockStatusLabel(stock: StockData): string {
         const status = this.getStockStatus(stock);
-        if (status === 'out') return 'Out of Stock';
-        if (status === 'low') return 'Low Stock';
-        return 'In Stock';
+        if (status === 'out') return this.translateService.instant('dashboard.outOfStock');
+        if (status === 'low') return this.translateService.instant('dashboard.lowStock');
+        return this.translateService.instant('dashboard.inStock');
     }
 
     getStoreTypeSeverity(type?: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
@@ -18,6 +19,7 @@ import { forkJoin } from 'rxjs';
     imports: [
         CommonModule,
         RouterModule,
+        TranslateModule,
         TableModule,
         ButtonModule,
         ChartModule,
@@ -30,11 +32,11 @@ import { forkJoin } from 'rxjs';
             <!-- Header Section -->
             <div class="col-span-12">
                 <div class="card mb-6">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-4">AI-Powered Inventory Management for Multi-Store Businesses.</h1>
+                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-4">{{ 'dashboard.header' | translate }}</h1>
                     <div class="flex flex-wrap gap-3">
-                        <p-button label="Upload Files" icon="pi pi-cloud-upload" [outlined]="true" routerLink="/inventory/upload"></p-button>
-                        <p-button label="Analyze Data" icon="pi pi-search" severity="success"></p-button>
-                        <p-button label="Generate Transfers" icon="pi pi-arrows-h" severity="success"></p-button>
+                        <p-button [label]="'dashboard.uploadFiles' | translate" icon="pi pi-cloud-upload" [outlined]="true" routerLink="/inventory/upload"></p-button>
+                        <p-button [label]="'dashboard.analyzeData' | translate" icon="pi pi-search" severity="success"></p-button>
+                        <p-button [label]="'dashboard.generateTransfers' | translate" icon="pi pi-arrows-h" severity="success"></p-button>
                     </div>
                 </div>
             </div>
@@ -42,7 +44,7 @@ import { forkJoin } from 'rxjs';
             <!-- KPI Cards -->
             <div class="col-span-12 lg:col-span-6 xl:col-span-3">
                 <app-kpi-card 
-                    label="Stores Monitored" 
+                    [label]="'dashboard.storesMonitored' | translate" 
                     [value]="kpiData.storesMonitored"
                     icon="pi pi-building text-xl!"
                     iconColor="blue">
@@ -50,7 +52,7 @@ import { forkJoin } from 'rxjs';
             </div>
             <div class="col-span-12 lg:col-span-6 xl:col-span-3">
                 <app-kpi-card 
-                    label="Total Products" 
+                    [label]="'dashboard.totalProducts' | translate" 
                     [value]="kpiData.totalProducts"
                     icon="pi pi-box text-xl!"
                     iconColor="green">
@@ -58,7 +60,7 @@ import { forkJoin } from 'rxjs';
             </div>
             <div class="col-span-12 lg:col-span-6 xl:col-span-3">
                 <app-kpi-card 
-                    label="Transfers In Progress" 
+                    [label]="'dashboard.transfersInProgress' | translate" 
                     [value]="kpiData.transfersInProgress"
                     icon="pi pi-arrows-h text-xl!"
                     iconColor="orange">
@@ -66,7 +68,7 @@ import { forkJoin } from 'rxjs';
             </div>
             <div class="col-span-12 lg:col-span-6 xl:col-span-3">
                 <app-kpi-card 
-                    label="Stockout Risk Alerts" 
+                    [label]="'dashboard.stockoutRiskAlerts' | translate" 
                     [value]="kpiData.stockoutRiskAlerts"
                     icon="pi pi-exclamation-triangle text-xl!"
                     iconColor="red">
@@ -76,20 +78,20 @@ import { forkJoin } from 'rxjs';
             <!-- Transfer Suggestions Table -->
             <div class="col-span-12">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-2">AI-Generated Transfer Suggestions</h2>
-                    <p class="text-muted-color mb-6">Automated transfer recommendations to optimize inventory levels.</p>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-2">{{ 'dashboard.transferSuggestionsTitle' | translate }}</h2>
+                    <p class="text-muted-color mb-6">{{ 'dashboard.transferSuggestionsDescription' | translate }}</p>
                     
                     <p-table [value]="transferSuggestions" [paginator]="true" [rows]="10" [loading]="loading">
                         <ng-template pTemplate="header">
                             <tr>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Priority</th>
-                                <th>Reason</th>
-                                <th>Confidence</th>
-                                <th>Action</th>
+                                <th>{{ 'common.from' | translate }}</th>
+                                <th>{{ 'common.to' | translate }}</th>
+                                <th>{{ 'common.product' | translate }}</th>
+                                <th>{{ 'common.quantity' | translate }}</th>
+                                <th>{{ 'common.priority' | translate }}</th>
+                                <th>{{ 'common.reason' | translate }}</th>
+                                <th>{{ 'common.confidence' | translate }}</th>
+                                <th>{{ 'common.action' | translate }}</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-suggestion>
@@ -113,7 +115,7 @@ import { forkJoin } from 'rxjs';
                                 <td>{{ suggestion.confidence }}%</td>
                                 <td>
                                     <p-button 
-                                        label="Transfer" 
+                                        [label]="'dashboard.transfer' | translate" 
                                         icon="pi pi-check" 
                                         size="small"
                                         severity="success"
@@ -125,7 +127,7 @@ import { forkJoin } from 'rxjs';
                         <ng-template pTemplate="emptymessage">
                             <tr>
                                 <td colspan="8" class="text-center py-8 text-muted-color">
-                                    No transfer suggestions available. Upload data to generate AI-powered recommendations.
+                                    {{ 'dashboard.noTransferSuggestions' | translate }}
                                 </td>
                             </tr>
                         </ng-template>
@@ -136,13 +138,13 @@ import { forkJoin } from 'rxjs';
             <!-- Charts Section -->
             <div class="col-span-12 xl:col-span-6">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Stock Level Analysis</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'dashboard.stockLevelAnalysis' | translate }}</h2>
                     <p-chart type="bar" [data]="stockChartData" [options]="stockChartOptions" [style]="{height: '300px'}"></p-chart>
                 </div>
             </div>
             <div class="col-span-12 xl:col-span-6">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">Sales Trends</h2>
+                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'dashboard.salesTrends' | translate }}</h2>
                     <p-chart type="line" [data]="salesChartData" [options]="salesChartOptions" [style]="{height: '300px'}"></p-chart>
                 </div>
             </div>
@@ -152,6 +154,7 @@ import { forkJoin } from 'rxjs';
 export class Dashboard implements OnInit {
     private inventoryService = inject(InventoryDataService);
     private transferService = inject(TransferService);
+    private translateService = inject(TranslateService);
 
     kpiData = {
         storesMonitored: 0,
@@ -249,29 +252,32 @@ export class Dashboard implements OnInit {
         const lowStock = months.map(() => Math.floor(Math.random() * 2) + 1);
         const outOfStock = months.map(() => Math.floor(Math.random() * 1));
 
-        this.stockChartData = {
-            labels: months,
-            datasets: [
-                {
-                    label: 'In Stock',
-                    data: inStock,
-                    backgroundColor: '#10B981',
-                    borderColor: '#10B981'
-                },
-                {
-                    label: 'Low Stock',
-                    data: lowStock,
-                    backgroundColor: '#F59E0B',
-                    borderColor: '#F59E0B'
-                },
-                {
-                    label: 'Out of Stock',
-                    data: outOfStock,
-                    backgroundColor: '#EF4444',
-                    borderColor: '#EF4444'
-                }
-            ]
-        };
+        // Load translations for chart labels
+        this.translateService.get(['dashboard.inStock', 'dashboard.lowStock', 'dashboard.outOfStock']).subscribe(translations => {
+            this.stockChartData = {
+                labels: months,
+                datasets: [
+                    {
+                        label: translations['dashboard.inStock'],
+                        data: inStock,
+                        backgroundColor: '#10B981',
+                        borderColor: '#10B981'
+                    },
+                    {
+                        label: translations['dashboard.lowStock'],
+                        data: lowStock,
+                        backgroundColor: '#F59E0B',
+                        borderColor: '#F59E0B'
+                    },
+                    {
+                        label: translations['dashboard.outOfStock'],
+                        data: outOfStock,
+                        backgroundColor: '#EF4444',
+                        borderColor: '#EF4444'
+                    }
+                ]
+            };
+        });
 
         this.stockChartOptions = {
             responsive: true,
@@ -338,23 +344,25 @@ export class Dashboard implements OnInit {
     private prepareDefaultCharts() {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
         
-        this.stockChartData = {
-            labels: months,
-            datasets: [{
-                label: 'No Data',
-                data: [],
-                backgroundColor: '#6B7280'
-            }]
-        };
+        this.translateService.get('common.noData').subscribe(noDataLabel => {
+            this.stockChartData = {
+                labels: months,
+                datasets: [{
+                    label: noDataLabel,
+                    data: [],
+                    backgroundColor: '#6B7280'
+                }]
+            };
 
-        this.salesChartData = {
-            labels: months,
-            datasets: [{
-                label: 'No Data',
-                data: [],
-                borderColor: '#6B7280'
-            }]
-        };
+            this.salesChartData = {
+                labels: months,
+                datasets: [{
+                    label: noDataLabel,
+                    data: [],
+                    borderColor: '#6B7280'
+                }]
+            };
+        });
 
         this.stockChartOptions = {
             responsive: true,
