@@ -31,34 +31,63 @@ export class TransferService {
         return [];
     }
 
-    // Get all transfers with optional filters
-    getTransfers(storeSent?: number, storeReceive?: number, productId?: number, startDate?: string, endDate?: string): Observable<Transfer[]> {
-        let params = new HttpParams();
+    // Get transfers with pagination, sorting, search, and filters
+    getTransfers(
+        page: number = 0,
+        size: number = 20,
+        sort?: string,
+        search?: string,
+        filters?: {
+            storeSent?: number;
+            storeReceive?: number;
+            productId?: number;
+            startDate?: string;
+            endDate?: string;
+        }
+    ): Observable<any> {
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('size', size.toString());
         
-        if (storeSent) {
-            params = params.set('storeSent', storeSent.toString());
+        if (sort) {
+            params = params.set('sort', sort);
         }
-        if (storeReceive) {
-            params = params.set('storeReceive', storeReceive.toString());
+        if (search) {
+            params = params.set('search', search);
         }
-        if (productId) {
-            params = params.set('productId', productId.toString());
-        }
-        if (startDate) {
-            params = params.set('startDate', startDate);
-        }
-        if (endDate) {
-            params = params.set('endDate', endDate);
+        if (filters) {
+            if (filters.storeSent) {
+                params = params.set('storeSent', filters.storeSent.toString());
+            }
+            if (filters.storeReceive) {
+                params = params.set('storeReceive', filters.storeReceive.toString());
+            }
+            if (filters.productId) {
+                params = params.set('productId', filters.productId.toString());
+            }
+            if (filters.startDate) {
+                params = params.set('startDate', filters.startDate);
+            }
+            if (filters.endDate) {
+                params = params.set('endDate', filters.endDate);
+            }
         }
 
-        return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.transfers}`, { params })
+        return this.http.get<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.transfers}`, { params })
             .pipe(
                 map(response => {
                     if (response.success && response.data) {
-                        // Transform backend transfer format to frontend format
-                        return response.data.map((t: any) => this.transformTransfer(t));
+                        if (response.data.content) {
+                            return {
+                                ...response.data,
+                                content: response.data.content.map((t: any) => this.transformTransfer(t))
+                            };
+                        }
+                        if (Array.isArray(response.data)) {
+                            return response.data.map((t: any) => this.transformTransfer(t));
+                        }
                     }
-                    return [];
+                    return response.data || [];
                 }),
                 catchError(error => {
                     console.error('Error fetching transfers:', error);

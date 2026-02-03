@@ -546,8 +546,10 @@ export class CategoriesComponent implements OnInit {
 
     loadCategoriesDataLazy(event: TableLazyLoadEvent) {
         this.loading = true;
-        const page = event.first! / event.rows!;
-        const size = event.rows!;
+        const page = event.first && event.rows ? Math.floor(event.first / event.rows) : 0;
+        const size = event.rows || this.pageSize;
+        
+        this.pageSize = size;
 
         // Get sort info
         if (event.sortField) {
@@ -602,10 +604,26 @@ export class CategoriesComponent implements OnInit {
     onSort(event: any) {
         this.currentSortField = event.field;
         this.currentSortOrder = event.order;
+        const lazyEvent: TableLazyLoadEvent = {
+            first: 0,
+            rows: this.pageSize,
+            sortField: event.field,
+            sortOrder: event.order,
+            filters: this.tableFilters
+        };
+        this.loadCategoriesDataLazy(lazyEvent);
     }
 
     onFilter(event: any) {
         this.tableFilters = event.filters;
+        const lazyEvent: TableLazyLoadEvent = {
+            first: 0,
+            rows: this.pageSize,
+            sortField: this.currentSortField,
+            sortOrder: this.currentSortOrder,
+            filters: event.filters || {}
+        };
+        this.loadCategoriesDataLazy(lazyEvent);
     }
 
     onGlobalSearch(event: any) {
