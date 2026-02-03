@@ -1,0 +1,15 @@
+/store/store_id/stock ==>
+[products,quantity,ts]
+
+/store/store_id/stock/latest ==> 
+[products,quantity,incoming,outgoing]
+
+/get_products?param=_with_policy ===> 
+[products]
+
+/stores?param=_with_policy ==> 
+[stores]
+
+/settings/ ===> 
+[]
+

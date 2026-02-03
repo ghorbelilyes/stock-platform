@@ -92,4 +92,49 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
         @Param("endDate") LocalDate endDate,
         Pageable pageable
     );
+
+    @Query(
+        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+            "p.id, p.codeBarre, p.name, p.description" +
+        ") " +
+        "FROM Sales s JOIN s.store st JOIN s.product p " +
+        "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
+        "AND (:productId IS NULL OR s.idProduct = :productId) " +
+        "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR s.rangeDate BETWEEN :startDate AND :endDate) " +
+        "AND (:search IS NULL OR " +
+            "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+            "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+            "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+            "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
+        ") " +
+        "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) " +
+        "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) " +
+        "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))",
+        countQuery = "SELECT COUNT(s) FROM Sales s JOIN s.store st JOIN s.product p " +
+            "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
+            "AND (:productId IS NULL OR s.idProduct = :productId) " +
+            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR s.rangeDate BETWEEN :startDate AND :endDate) " +
+            "AND (:search IS NULL OR " +
+                "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
+            ") " +
+            "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) " +
+            "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) " +
+            "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))"
+    )
+    Page<SalesView> findViewsWithFilters(
+        @Param("storeId") Long storeId,
+        @Param("productId") Long productId,
+        @Param("search") String search,
+        @Param("storeName") String storeName,
+        @Param("productName") String productName,
+        @Param("city") String city,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        Pageable pageable
+    );
 }

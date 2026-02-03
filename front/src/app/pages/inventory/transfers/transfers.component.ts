@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +15,7 @@ interface LazyLoadEvent {
     rows?: number | null;
     sortField?: string | string[] | null;
     sortOrder?: number | null;
+    multiSortMeta?: { field: string; order: number }[] | null;
     filters?: any;
     globalFilter?: string | string[] | null;
 }
@@ -21,7 +23,7 @@ interface LazyLoadEvent {
 @Component({
     selector: 'app-transfers',
     standalone: true,
-    imports: [CommonModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
@@ -95,12 +97,18 @@ interface LazyLoadEvent {
                         [globalFilterFields]="['sourceStoreName', 'destinationStoreName', 'notes']"
                         [loading]="loadingTransfers"
                         [sortMode]="'multiple'"
+                        (onSort)="onSort($event)"
                         #dt>
                         <ng-template pTemplate="caption">
                             <div class="flex justify-between items-center">
                                 <span class="p-input-icon-left">
                                     <i class="pi pi-search"></i>
-                                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target), 'contains')" [placeholder]="'common.search' | translate" />
+                                    <input
+                                        pInputText
+                                        type="text"
+                                        [(ngModel)]="globalSearch"
+                                        (input)="onGlobalSearch($event)"
+                                        [placeholder]="'common.search' | translate" />
                                 </span>
                             </div>
                         </ng-template>
@@ -160,6 +168,9 @@ export class TransfersComponent implements OnInit {
     private transferService = inject(TransferService);
     suggestions: TransferSuggestion[] = [];
     transfers: Transfer[] = [];
+    globalSearch: string = '';
+    currentSortField: string = 'date';
+    currentSortOrder: number = -1;
     showTransferWizard = false;
     loadingSuggestions = false;
     loadingTransfers = false;
@@ -184,18 +195,38 @@ export class TransfersComponent implements OnInit {
         
         this.pageSize = size;
 
-        this.transferService.getTransfers().subscribe({
-            next: (transfers) => {
-                // Manual pagination for now (backend doesn't support pagination yet)
-                const start = page * size;
-                const end = start + size;
-                this.transfers = transfers.slice(start, end);
-                this.totalRecords = transfers.length;
+        // Map UI sort fields to backend fields
+        let sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
+        if (sortField === 'createdAt') sortField = 'date';
+        else if (sortField === 'sourceStoreName') sortField = 'idStoreSent';
+        else if (sortField === 'destinationStoreName') sortField = 'idStoreReceive';
+        else if (sortField === 'items.quantity') sortField = 'quantity';
+        else if (sortField === 'notes') sortField = 'reason';
+
+        const sortOrder = event.sortOrder ?? this.currentSortOrder;
+        const sortParam = sortField ? `${sortField},${sortOrder === 1 ? 'asc' : 'desc'}` : `${this.currentSortField},${this.currentSortOrder === 1 ? 'asc' : 'desc'}`;
+
+        const searchTerm = this.globalSearch?.trim() || undefined;
+
+        this.transferService.getTransfers(page, size, sortParam, searchTerm).subscribe({
+            next: (response) => {
+                if (response && response.content) {
+                    this.transfers = response.content;
+                    this.totalRecords = response.totalElements || 0;
+                } else if (Array.isArray(response)) {
+                    this.transfers = response;
+                    this.totalRecords = response.length;
+                } else {
+                    this.transfers = [];
+                    this.totalRecords = 0;
+                }
                 this.loadingTransfers = false;
             },
             error: (error) => {
                 console.error('Error loading transfers:', error);
                 this.loadingTransfers = false;
+                this.transfers = [];
+                this.totalRecords = 0;
             }
         });
     }
@@ -203,8 +234,7 @@ export class TransfersComponent implements OnInit {
     approveTransfer(suggestionId: string) {
         this.transferService.approveSuggestion(suggestionId, undefined).subscribe({
             next: (transfer) => {
-                // Add to transfers list
-                this.transfers = [transfer, ...this.transfers];
+                this.loadTransfersDataLazy({ first: 0, rows: this.pageSize, sortField: this.currentSortField, sortOrder: this.currentSortOrder });
                 // Remove approved suggestion
                 this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
             },
@@ -218,5 +248,34 @@ export class TransfersComponent implements OnInit {
         if (status === 'approved' || status === 'received' || status === 'closed') return 'ok';
         if (status === 'picked' || status === 'in_transit') return 'medium';
         return 'low-priority';
+    }
+
+    onGlobalSearch(event: any) {
+        const lazyEvent: LazyLoadEvent = {
+            first: 0,
+            rows: this.pageSize,
+            sortField: this.currentSortField,
+            sortOrder: this.currentSortOrder
+        };
+        this.loadTransfersDataLazy(lazyEvent);
+    }
+
+    onSort(event: any) {
+        let sortField = event.field;
+        if (sortField === 'createdAt') sortField = 'date';
+        else if (sortField === 'sourceStoreName') sortField = 'idStoreSent';
+        else if (sortField === 'destinationStoreName') sortField = 'idStoreReceive';
+        else if (sortField === 'items.quantity') sortField = 'quantity';
+        else if (sortField === 'notes') sortField = 'reason';
+        this.currentSortField = sortField;
+        this.currentSortOrder = event.order;
+        const lazyEvent: LazyLoadEvent = {
+            first: 0,
+            rows: this.pageSize,
+            sortField: event.field,
+            sortOrder: event.order,
+            multiSortMeta: event.multiSortMeta
+        };
+        this.loadTransfersDataLazy(lazyEvent);
     }
 }

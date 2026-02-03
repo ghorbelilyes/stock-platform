@@ -265,21 +265,16 @@ export class SalesComponent implements OnInit {
         
         this.pageSize = size;
 
-        // Build sort parameter - map nested fields to backend fields
+        // Build sort parameter - keep nested paths for backend sorting
         let sortParam: string | undefined;
         if (event.sortField) {
-            let sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
-            // Map nested fields to backend fields
-            if (sortField === 'store.name') sortField = 'storeName';
-            else if (sortField === 'product.name') sortField = 'productName';
-            else if (sortField === 'store.city') sortField = 'city';
-            
+            const sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
             const sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
             sortParam = `${sortField},${sortOrder}`;
-            this.currentSortField = event.sortField as string;
+            this.currentSortField = sortField;
             this.currentSortOrder = event.sortOrder || -1;
         } else {
-            sortParam = `${this.currentSortField === 'rangeDate' ? 'rangeDate' : 'rangeDate'},${this.currentSortOrder === 1 ? 'asc' : 'desc'}`;
+            sortParam = `${this.currentSortField},${this.currentSortOrder === 1 ? 'asc' : 'desc'}`;
         }
 
         // Build filters from column filters
@@ -402,6 +397,7 @@ export class SalesComponent implements OnInit {
     }
 
     onFilter(event: any) {
+        this.tableFilters = { ...event.filters };
         const lazyEvent: TableLazyLoadEvent = {
             first: 0,
             rows: this.pageSize,
