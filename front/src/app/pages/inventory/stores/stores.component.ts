@@ -37,8 +37,6 @@ interface StoreData {
                         [globalFilterFields]="['name', 'city', 'type', 'serialNumber']" 
                         [loading]="loading"
                         [sortMode]="'single'"
-                        [sortField]="currentSortField"
-                        [sortOrder]="currentSortOrder"
                         (onSort)="onSort($event)"
                         [filterDelay]="300"
                         [filters]="tableFilters"
@@ -256,16 +254,9 @@ export class StoresComponent implements OnInit {
     }
 
     onSort(event: any) {
+        // Just update the state - PrimeNG will automatically trigger onLazyLoad
         this.currentSortField = event.field;
         this.currentSortOrder = event.order;
-        const lazyEvent: TableLazyLoadEvent = {
-            first: 0,
-            rows: this.pageSize,
-            sortField: event.field,
-            sortOrder: event.order,
-            filters: this.tableFilters
-        };
-        this.loadStoresDataLazy(lazyEvent);
     }
 
     onFilter(event: any) {

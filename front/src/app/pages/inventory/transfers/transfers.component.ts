@@ -195,16 +195,41 @@ export class TransfersComponent implements OnInit {
         
         this.pageSize = size;
 
-        // Map UI sort fields to backend fields
-        let sortField = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
-        if (sortField === 'createdAt') sortField = 'date';
-        else if (sortField === 'sourceStoreName') sortField = 'idStoreSent';
-        else if (sortField === 'destinationStoreName') sortField = 'idStoreReceive';
-        else if (sortField === 'items.quantity') sortField = 'quantity';
-        else if (sortField === 'notes') sortField = 'reason';
+        // Determine the UI sort field and order coming from PrimeNG
+        let uiSortField: string | undefined = Array.isArray(event.sortField)
+            ? (event.sortField[0] ?? undefined)
+            : (event.sortField ?? undefined);
+        let uiSortOrder: number | undefined = event.sortOrder ?? undefined;
 
-        const sortOrder = event.sortOrder ?? this.currentSortOrder;
-        const sortParam = sortField ? `${sortField},${sortOrder === 1 ? 'asc' : 'desc'}` : `${this.currentSortField},${this.currentSortOrder === 1 ? 'asc' : 'desc'}`;
+        // In multiple sort mode, sort info is in multiSortMeta
+        if (!uiSortField && event.multiSortMeta && event.multiSortMeta.length > 0) {
+            uiSortField = event.multiSortMeta[0].field;
+            uiSortOrder = event.multiSortMeta[0].order;
+        }
+
+        // Map UI sort fields to backend fields
+        let sortField = uiSortField;
+        if (sortField) {
+            if (sortField === 'createdAt') sortField = 'date';
+            else if (sortField === 'sourceStoreName') sortField = 'idStoreSent';
+            else if (sortField === 'destinationStoreName') sortField = 'idStoreReceive';
+            else if (sortField === 'items.quantity') sortField = 'quantity';
+            else if (sortField === 'notes') sortField = 'reason';
+            // If sortField doesn't match any UI field, it might already be a backend field name, keep it as is
+        }
+        
+        // Fall back to current state if no sort info in event
+        if (!sortField) {
+            sortField = this.currentSortField || 'date';
+        }
+        const sortOrder = uiSortOrder !== undefined && uiSortOrder !== null ? uiSortOrder : this.currentSortOrder;
+
+        // Update state for subsequent calls
+        this.currentSortField = sortField;
+        this.currentSortOrder = sortOrder;
+        
+        // Build sort parameter
+        const sortParam = `${sortField},${sortOrder === 1 ? 'asc' : 'desc'}`;
 
         const searchTerm = this.globalSearch?.trim() || undefined;
 
@@ -261,21 +286,8 @@ export class TransfersComponent implements OnInit {
     }
 
     onSort(event: any) {
-        let sortField = event.field;
-        if (sortField === 'createdAt') sortField = 'date';
-        else if (sortField === 'sourceStoreName') sortField = 'idStoreSent';
-        else if (sortField === 'destinationStoreName') sortField = 'idStoreReceive';
-        else if (sortField === 'items.quantity') sortField = 'quantity';
-        else if (sortField === 'notes') sortField = 'reason';
-        this.currentSortField = sortField;
-        this.currentSortOrder = event.order;
-        const lazyEvent: LazyLoadEvent = {
-            first: 0,
-            rows: this.pageSize,
-            sortField: event.field,
-            sortOrder: event.order,
-            multiSortMeta: event.multiSortMeta
-        };
-        this.loadTransfersDataLazy(lazyEvent);
+        // Just store the latest sort state; actual mapping is done in loadTransfersDataLazy
+        this.currentSortField = event.field || this.currentSortField || 'date';
+        this.currentSortOrder = event.order !== null && event.order !== undefined ? event.order : this.currentSortOrder;
     }
 }
