@@ -64,12 +64,21 @@ interface LazyLoadEvent {
                                 <td>{{ suggestion.reason }}</td>
                                 <td>{{ suggestion.confidence }}%</td>
                                 <td>
-                                    <p-button 
-                                        [label]="'transfers.transfer' | translate" 
-                                        icon="pi pi-check" 
-                                        size="small"
-                                        (onClick)="approveTransfer(suggestion.id)">
-                                    </p-button>
+                                    <div class="flex gap-2">
+                                        <p-button 
+                                            [label]="'transfers.approve' | translate" 
+                                            icon="pi pi-check" 
+                                            size="small"
+                                            severity="success"
+                                            [loading]="approvingId === suggestion.id"
+                                            (onClick)="approveTransfer(suggestion)"></p-button>
+                                        <p-button 
+                                            [label]="'transfers.dismiss' | translate" 
+                                            icon="pi pi-times" 
+                                            size="small"
+                                            severity="secondary"
+                                            (onClick)="dismissSuggestion(suggestion)"></p-button>
+                                    </div>
                                 </td>
                             </tr>
                         </ng-template>
@@ -114,10 +123,12 @@ interface LazyLoadEvent {
                         </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
+                                <th [pSortableColumn]="'id'">{{ 'transfers.id' | translate }}</th>
                                 <th [pSortableColumn]="'createdAt'">
                                     {{ 'common.date' | translate }}
                                     <p-sortIcon [field]="'createdAt'"></p-sortIcon>
                                 </th>
+                                <th>{{ 'transfers.status' | translate }}</th>
                                 <th [pSortableColumn]="'sourceStoreName'">
                                     {{ 'transfers.sourceStore' | translate }}
                                     <p-sortIcon [field]="'sourceStoreName'"></p-sortIcon>
@@ -137,19 +148,26 @@ interface LazyLoadEvent {
                                 </th>
                             </tr>
                         </ng-template>
-                        <ng-template pTemplate="body" let-transfer>
+                        <ng-template pTemplate="body" let-row>
                             <tr>
-                                <td>{{ transfer.createdAt | date:'short' }}</td>
-                                <td>{{ transfer.sourceStoreName || transfer.sourceStoreId }}</td>
-                                <td>{{ transfer.destinationStoreName || transfer.destinationStoreId }}</td>
-                                <td>{{ transfer.items[0]?.productName || transfer.items[0]?.sku || 'N/A' }}</td>
-                                <td>{{ transfer.items[0]?.quantity || 0 }}</td>
-                                <td>{{ transfer.notes || 'N/A' }}</td>
+                                <td><span class="font-mono">{{ row.id }}</span></td>
+                                <td>{{ row.createdAt | date:'short' }}</td>
+                                <td>
+                                    <app-status-pill 
+                                        [status]="getTransferStatusType(row.status)"
+                                        [label]="getTransferStatusLabel(row.status) | translate">
+                                    </app-status-pill>
+                                </td>
+                                <td>{{ row.sourceStoreName || row.sourceStoreId }}</td>
+                                <td>{{ row.destinationStoreName || row.destinationStoreId }}</td>
+                                <td>{{ row.items[0]?.productName || row.items[0]?.sku || 'N/A' }}</td>
+                                <td>{{ row.items[0]?.quantity || 0 }}</td>
+                                <td>{{ row.notes || 'N/A' }}</td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="6" class="text-center py-8 text-muted-color">
+                                <td colspan="8" class="text-center py-8 text-muted-color">
                                     {{ 'common.noData' | translate }}
                                 </td>
                             </tr>
@@ -177,15 +195,29 @@ export class TransfersComponent implements OnInit {
     totalRecords = 0;
     pageSize = 20;
 
+    approvingId: string | null = null;
+
     ngOnInit() {
         this.loadSuggestions();
         // Initial load will be triggered by lazy load
     }
 
-    private loadSuggestions() {
+    loadSuggestions() {
         this.loadingSuggestions = true;
-        this.suggestions = this.transferService.getSuggestions();
-        this.loadingSuggestions = false;
+        this.transferService.getSuggestions().subscribe({
+            next: (list) => {
+                this.suggestions = list;
+                this.loadingSuggestions = false;
+            },
+            error: () => {
+                this.loadingSuggestions = false;
+                this.suggestions = [];
+            }
+        });
+    }
+
+    dismissSuggestion(suggestion: TransferSuggestion) {
+        this.suggestions = this.suggestions.filter(s => s.id !== suggestion.id);
     }
 
     loadTransfersDataLazy(event: LazyLoadEvent) {
@@ -256,23 +288,32 @@ export class TransfersComponent implements OnInit {
         });
     }
 
-    approveTransfer(suggestionId: string) {
-        this.transferService.approveSuggestion(suggestionId, undefined).subscribe({
-            next: (transfer) => {
+    approveTransfer(suggestion: TransferSuggestion) {
+        this.approvingId = suggestion.id;
+        this.transferService.approveSuggestion(suggestion.id, suggestion.quantity).subscribe({
+            next: () => {
+                this.approvingId = null;
                 this.loadTransfersDataLazy({ first: 0, rows: this.pageSize, sortField: this.currentSortField, sortOrder: this.currentSortOrder });
-                // Remove approved suggestion
-                this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
+                this.suggestions = this.suggestions.filter(s => s.id !== suggestion.id);
             },
             error: (error) => {
                 console.error('Error approving transfer:', error);
+                this.approvingId = null;
             }
         });
     }
 
     getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' {
-        if (status === 'approved' || status === 'received' || status === 'closed') return 'ok';
-        if (status === 'picked' || status === 'in_transit') return 'medium';
+        if (status === 'received' || status === 'closed') return 'ok';
+        if (status === 'approved' || status === 'picked' || status === 'in_transit') return 'medium';
         return 'low-priority';
+    }
+
+    getTransferStatusLabel(status: string): string {
+        if (status === 'in_transit' || status === 'approved' || status === 'picked') return 'transfers.statusInProgress';
+        if (status === 'received') return 'transfers.statusReceived';
+        if (status === 'closed') return 'transfers.statusClosed';
+        return 'transfers.statusProposed';
     }
 
     onGlobalSearch(event: any) {

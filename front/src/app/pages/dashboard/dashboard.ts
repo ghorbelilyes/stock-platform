@@ -206,9 +206,16 @@ export class Dashboard implements OnInit {
 
     private loadTransferSuggestions() {
         this.loading = true;
-        // Get suggestions from service (currently returns empty array)
-        this.transferSuggestions = this.transferService.getSuggestions().slice(0, 10);
-        this.loading = false;
+        this.transferService.getSuggestions().subscribe({
+            next: (list) => {
+                this.transferSuggestions = list.slice(0, 10);
+                this.loading = false;
+            },
+            error: () => {
+                this.transferSuggestions = [];
+                this.loading = false;
+            }
+        });
     }
 
     approveTransfer(suggestionId: string) {

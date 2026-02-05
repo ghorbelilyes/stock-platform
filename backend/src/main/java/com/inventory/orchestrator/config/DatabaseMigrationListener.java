@@ -22,26 +22,37 @@ public class DatabaseMigrationListener {
     private JdbcTemplate jdbcTemplate;
     
     @PostConstruct
-    public void fixFileTypeConstraint() {
+    public void runMigrations() {
+        fixFileTypeConstraint();
+        addTransferStatusColumn();
+    }
+
+    private void fixFileTypeConstraint() {
         try {
             logger.info("Checking file_upload_file_type_check constraint...");
-            
-            // Drop existing constraint if it exists
             jdbcTemplate.execute(
                 "ALTER TABLE file_upload DROP CONSTRAINT IF EXISTS file_upload_file_type_check"
             );
-            
-            // Recreate constraint with STORE and PRODUCT included
             jdbcTemplate.execute(
                 "ALTER TABLE file_upload ADD CONSTRAINT file_upload_file_type_check " +
                 "CHECK (file_type IN ('STOCK', 'SALES', 'TRANSFER', 'STORE', 'PRODUCT'))"
             );
-            
             logger.info("Successfully updated file_upload_file_type_check constraint to include STORE and PRODUCT");
         } catch (Exception e) {
-            // Log but don't fail startup if constraint doesn't exist or table doesn't exist yet
             logger.warn("Could not update file_upload_file_type_check constraint: {}", e.getMessage());
-            logger.debug("This is normal if the table doesn't exist yet or constraint is already correct", e);
+        }
+    }
+
+    /** Ensures transfer.status column exists (fixes GET /transfers when DB was created before migration 003). */
+    private void addTransferStatusColumn() {
+        try {
+            logger.info("Ensuring transfer.status column exists...");
+            jdbcTemplate.execute(
+                "ALTER TABLE transfer ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'in_transit'"
+            );
+            logger.info("Transfer table has status column.");
+        } catch (Exception e) {
+            logger.warn("Could not add transfer.status column: {}", e.getMessage());
         }
     }
 }

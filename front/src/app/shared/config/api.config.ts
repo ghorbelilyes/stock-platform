@@ -18,6 +18,8 @@ export const API_CONFIG = {
         stocks: '/stocks',
         sales: '/sales',
         transfers: '/transfers',
+        transferSuggestions: '/transfers/suggestions',
+        transferSuggestionsApprove: '/transfers/suggestions/approve',
         categories: '/categories'
     }
 };

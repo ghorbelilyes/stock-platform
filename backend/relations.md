@@ -35,6 +35,7 @@
          │                  │            │   UUID     │
          └──────────────────┼────────────│ - reason   │
                             │            │ - quantity │
+                            │            │ - status   │ (approved|in_transit|received|closed)
                     ┌───────▼───────┐    └────────────┘
                     │   Product     │
                     │               │
@@ -169,3 +170,7 @@
 3. **Composite Key**: The `Stock` table uses a composite primary key consisting of `(id_store, id_product)`, meaning each product can only have one stock entry per store.
 
 4. **File Upload Tracking**: The `FileUpload` entity tracks all CSV file uploads, including validation results, column mappings, and import statistics. This is separate from the main inventory entities and has no foreign key relationships.
+
+5. **Transfer status**: The `transfer` table has a `status` column (`VARCHAR(32)`, default `'in_transit'`). Lifecycle: `approved` → `in_transit` (en route) → `received` → `closed`. Transfers created from approved suggestions get status `in_transit`. Migration: `003_add_transfer_status.sql`.
+
+6. **Transfer suggestions**: Computed by `TransferSuggestionService` from stock levels (no DB table). Suggestions pair donor stores (excess stock) with receiver stores (low/zero stock). Endpoints: `GET /transfers/suggestions`, `POST /transfers/suggestions/approve`.

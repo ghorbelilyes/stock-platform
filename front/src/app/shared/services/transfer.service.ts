@@ -24,11 +24,37 @@ export class TransferService {
     private inventoryService = inject(InventoryDataService);
     private apiUrl = API_CONFIG.baseUrl;
 
-    // Get transfer suggestions (mock for now - AI service not implemented)
-    getSuggestions(): TransferSuggestion[] {
-        // TODO: Implement AI service endpoint when available
-        // For now, return empty array or generate from stock data
-        return [];
+    // Get transfer suggestions from backend (computed from stock levels)
+    getSuggestions(): Observable<TransferSuggestion[]> {
+        return this.http.get<ApiResponse<TransferSuggestion[]>>(`${this.apiUrl}${API_CONFIG.endpoints.transferSuggestions}`).pipe(
+            map(response => {
+                if (response.success && Array.isArray(response.data)) {
+                    return response.data.map((s: any) => this.mapSuggestion(s));
+                }
+                return [];
+            }),
+            catchError(error => {
+                console.error('Error fetching transfer suggestions:', error);
+                return throwError(() => error);
+            })
+        );
+    }
+
+    private mapSuggestion(s: any): TransferSuggestion {
+        return {
+            id: s.id || '',
+            fromStoreId: String(s.fromStoreId ?? ''),
+            fromStoreName: s.fromStoreName || '',
+            toStoreId: String(s.toStoreId ?? ''),
+            toStoreName: s.toStoreName || '',
+            sku: s.sku || '',
+            productName: s.productName || '',
+            quantity: s.quantity ?? 0,
+            priority: (s.priority === 'high' || s.priority === 'medium' || s.priority === 'low') ? s.priority : 'low',
+            reason: s.reason || '',
+            confidence: s.confidence ?? 0,
+            createdAt: s.createdAt || new Date().toISOString()
+        };
     }
 
     // Get transfers with pagination, sorting, search, and filters
@@ -96,50 +122,46 @@ export class TransferService {
             );
     }
 
-    // Transform backend transfer to frontend format
+    // Transform backend transfer to frontend format (backend may send TransferView with store/product names)
     private transformTransfer(backendTransfer: any): Transfer {
+        const status = backendTransfer.status as TransferStatus;
+        const validStatus: TransferStatus[] = ['proposed', 'approved', 'picked', 'in_transit', 'received', 'closed'];
         return {
             id: backendTransfer.id?.toString() || '',
             createdAt: backendTransfer.date || new Date().toISOString(),
-            status: 'approved' as TransferStatus, // Default status
+            status: status && validStatus.includes(status) ? status : 'approved',
             items: [{
                 sku: backendTransfer.idProduct?.toString() || '',
-                productName: `Product ${backendTransfer.idProduct}`,
+                productName: backendTransfer.productName ?? `Product ${backendTransfer.idProduct ?? ''}`,
                 quantity: backendTransfer.quantity || 0
             }],
             sourceStoreId: backendTransfer.idStoreSent?.toString() || '',
-            sourceStoreName: `Store ${backendTransfer.idStoreSent}`,
+            sourceStoreName: backendTransfer.sourceStoreName ?? `Store ${backendTransfer.idStoreSent ?? ''}`,
             destinationStoreId: backendTransfer.idStoreReceive?.toString() || '',
-            destinationStoreName: `Store ${backendTransfer.idStoreReceive}`,
+            destinationStoreName: backendTransfer.destinationStoreName ?? `Store ${backendTransfer.idStoreReceive ?? ''}`,
             etaDays: 2, // Default ETA
             notes: backendTransfer.reason
         };
     }
 
-    // Approve transfer suggestion (create new transfer)
+    // Approve transfer suggestion (create new transfer via backend)
     approveSuggestion(suggestionId: string, quantity?: number): Observable<Transfer> {
-        // TODO: Implement when backend endpoint is available
-        // For now, return mock transfer
-        const mockTransfer: Transfer = {
-            id: `transfer-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            status: 'approved',
-            items: [{
-                sku: '',
-                productName: '',
-                quantity: quantity || 0
-            }],
-            sourceStoreId: '',
-            sourceStoreName: '',
-            destinationStoreId: '',
-            destinationStoreName: '',
-            etaDays: 2
-        };
-        
-        return new Observable(observer => {
-            observer.next(mockTransfer);
-            observer.complete();
-        });
+        const body: any = { suggestionId };
+        if (quantity != null && quantity > 0) {
+            body.quantity = quantity;
+        }
+        return this.http.post<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.transferSuggestionsApprove}`, body).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return this.transformTransfer(response.data);
+                }
+                throw new Error(response.message || 'Failed to create transfer');
+            }),
+            catchError(error => {
+                console.error('Error approving suggestion:', error);
+                return throwError(() => error);
+            })
+        );
     }
 
     // Update transfer status

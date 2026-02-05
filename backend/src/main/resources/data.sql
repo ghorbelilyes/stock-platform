@@ -107,6 +107,28 @@ WHERE NOT EXISTS (
 AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
 AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
 
+-- Stock for stores with low/zero levels to generate transfer suggestions (Airport Kiosk, City Center, Suburban)
+INSERT INTO stock (id_store, id_product, quantity)
+SELECT * FROM (VALUES
+    (111111111, 1234567890123, 0),    -- Airport Kiosk - Laptop (out)
+    (111111111, 2345678901234, 2),    -- Airport Kiosk - Mouse (low)
+    (111111111, 5678901234567, 0),    -- Airport Kiosk - Monitor (out)
+    (111111111, 8901234567890, 1),    -- Airport Kiosk - Headphones (low)
+    (666666666, 1234567890123, 2),    -- City Center - Laptop (low)
+    (666666666, 3456789012345, 0),    -- City Center - Keyboard (out)
+    (666666666, 6789012345678, 1),    -- City Center - Webcam (low)
+    (666666666, 9012345678901, 0),    -- City Center - External SSD (out)
+    (777777777, 4567890123456, 3),    -- Suburban - USB-C Hub (low)
+    (777777777, 7890123456789, 0),    -- Suburban - Standing Desk (out)
+    (777777777, 123456789012, 2)      -- Suburban - Docking Station (low)
+) AS v(id_store, id_product, quantity)
+WHERE NOT EXISTS (
+    SELECT 1 FROM stock
+    WHERE stock.id_store = v.id_store AND stock.id_product = v.id_product
+)
+AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
+AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
+
 -- Insert Sales (last 14 days - ~200 records)
 -- Using dates from the last 14 days from current date
 -- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
@@ -337,48 +359,49 @@ AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
 AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
 
 -- Insert Transfers (last 14 days - ~30 records)
--- Warehouse to stores transfers
+-- Warehouse to stores transfers; status: in_transit (en cours), received, closed
 -- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
-INSERT INTO transfer (date, id_store_sent, id_store_receive, id_product, reason, quantity)
+INSERT INTO transfer (date, id_store_sent, id_store_receive, id_product, reason, quantity, status)
 SELECT 
     v.date::date,
     v.id_store_sent,
     v.id_store_receive,
     v.id_product,
     v.reason,
-    v.quantity
+    v.quantity,
+    v.status
 FROM (VALUES
-    ('2026-02-04'::text, 999999999, 846546546, 2345678901234, 'Low stock replenishment', 30),
-    ('2026-02-03'::text, 999999999, 846546546, 5678901234567, 'Restock after high sales', 35),
-    ('2026-02-03'::text, 999999999, 846546546, 1234567890123, 'Restock after high sales', 22),
-    ('2026-02-02'::text, 888888888, 846546546, 123456789012, 'Low stock replenishment', 6),
-    ('2026-02-01'::text, 999999999, 666666666, 6789012345678, 'Restock after high sales', 7),
-    ('2026-01-31'::text, 999999999, 111111111, 3456789012345, 'Seasonal demand', 16),
-    ('2026-01-30'::text, 888888888, 777777777, 9012345678901, 'Initial stock allocation', 24),
-    ('2026-01-30'::text, 999999999, 777777777, 8901234567890, 'Promotional campaign', 22),
-    ('2026-01-29'::text, 999999999, 666666666, 3456789012345, 'Inventory rebalancing', 45),
-    ('2026-01-29'::text, 999999999, 111111111, 2345678901234, 'Restock after high sales', 26),
-    ('2026-01-29'::text, 999999999, 123456789, 5678901234567, 'Initial stock allocation', 38),
-    ('2026-01-28'::text, 888888888, 666666666, 5678901234567, 'Low stock replenishment', 16),
-    ('2026-01-27'::text, 888888888, 846546546, 2345678901234, 'Inventory rebalancing', 46),
-    ('2026-01-27'::text, 888888888, 123456789, 5678901234567, 'Seasonal demand', 6),
-    ('2026-01-27'::text, 999999999, 846546546, 7890123456789, 'Seasonal demand', 43),
-    ('2026-01-26'::text, 999999999, 777777777, 8901234567890, 'Weekly restock', 34),
-    ('2026-01-26'::text, 999999999, 123456789, 4567890123456, 'Inventory rebalancing', 38),
-    ('2026-01-26'::text, 999999999, 666666666, 9012345678901, 'Inventory rebalancing', 25),
-    ('2026-01-25'::text, 888888888, 777777777, 123456789012, 'Store opening stock', 35),
-    ('2026-01-24'::text, 888888888, 123456789, 4567890123456, 'Seasonal demand', 22),
-    ('2026-01-24'::text, 888888888, 666666666, 9012345678901, 'Store opening stock', 20),
-    ('2026-01-23'::text, 888888888, 666666666, 5678901234567, 'Low stock replenishment', 50),
-    ('2026-01-23'::text, 999999999, 123456789, 6789012345678, 'Seasonal demand', 30),
-    ('2026-01-22'::text, 999999999, 123456789, 123456789012, 'Low stock replenishment', 46),
-    ('2026-01-21'::text, 999999999, 846546546, 1234567890123, 'Restock after high sales', 10),
-    ('2026-01-21'::text, 999999999, 123456789, 2345678901234, 'Initial stock allocation', 30),
-    ('2026-01-21'::text, 999999999, 111111111, 2345678901234, 'Airport kiosk restock', 15),
-    ('2026-01-21'::text, 888888888, 777777777, 8901234567890, 'New store opening stock', 20),
-    ('2026-01-21'::text, 999999999, 666666666, 1234567890123, 'City center grand opening', 5),
-    ('2026-01-21'::text, 999999999, 846546546, 4567890123456, 'USB-C hub restock', 20)
-) AS v(date, id_store_sent, id_store_receive, id_product, reason, quantity)
+    ('2026-02-04'::text, 999999999, 846546546, 2345678901234, 'Low stock replenishment', 30, 'in_transit'),
+    ('2026-02-03'::text, 999999999, 846546546, 5678901234567, 'Restock after high sales', 35, 'in_transit'),
+    ('2026-02-03'::text, 999999999, 846546546, 1234567890123, 'Restock after high sales', 22, 'received'),
+    ('2026-02-02'::text, 888888888, 846546546, 123456789012, 'Low stock replenishment', 6, 'received'),
+    ('2026-02-01'::text, 999999999, 666666666, 6789012345678, 'Restock after high sales', 7, 'in_transit'),
+    ('2026-01-31'::text, 999999999, 111111111, 3456789012345, 'Seasonal demand', 16, 'received'),
+    ('2026-01-30'::text, 888888888, 777777777, 9012345678901, 'Initial stock allocation', 24, 'received'),
+    ('2026-01-30'::text, 999999999, 777777777, 8901234567890, 'Promotional campaign', 22, 'in_transit'),
+    ('2026-01-29'::text, 999999999, 666666666, 3456789012345, 'Inventory rebalancing', 45, 'received'),
+    ('2026-01-29'::text, 999999999, 111111111, 2345678901234, 'Restock after high sales', 26, 'closed'),
+    ('2026-01-29'::text, 999999999, 123456789, 5678901234567, 'Initial stock allocation', 38, 'received'),
+    ('2026-01-28'::text, 888888888, 666666666, 5678901234567, 'Low stock replenishment', 16, 'received'),
+    ('2026-01-27'::text, 888888888, 846546546, 2345678901234, 'Inventory rebalancing', 46, 'in_transit'),
+    ('2026-01-27'::text, 888888888, 123456789, 5678901234567, 'Seasonal demand', 6, 'received'),
+    ('2026-01-27'::text, 999999999, 846546546, 7890123456789, 'Seasonal demand', 43, 'received'),
+    ('2026-01-26'::text, 999999999, 777777777, 8901234567890, 'Weekly restock', 34, 'in_transit'),
+    ('2026-01-26'::text, 999999999, 123456789, 4567890123456, 'Inventory rebalancing', 38, 'received'),
+    ('2026-01-26'::text, 999999999, 666666666, 9012345678901, 'Inventory rebalancing', 25, 'received'),
+    ('2026-01-25'::text, 888888888, 777777777, 123456789012, 'Store opening stock', 35, 'closed'),
+    ('2026-01-24'::text, 888888888, 123456789, 4567890123456, 'Seasonal demand', 22, 'received'),
+    ('2026-01-24'::text, 888888888, 666666666, 9012345678901, 'Store opening stock', 20, 'received'),
+    ('2026-01-23'::text, 888888888, 666666666, 5678901234567, 'Low stock replenishment', 50, 'received'),
+    ('2026-01-23'::text, 999999999, 123456789, 6789012345678, 'Seasonal demand', 30, 'in_transit'),
+    ('2026-01-22'::text, 999999999, 123456789, 123456789012, 'Low stock replenishment', 46, 'received'),
+    ('2026-01-21'::text, 999999999, 846546546, 1234567890123, 'Restock after high sales', 10, 'received'),
+    ('2026-01-21'::text, 999999999, 123456789, 2345678901234, 'Initial stock allocation', 30, 'received'),
+    ('2026-01-21'::text, 999999999, 111111111, 2345678901234, 'Airport kiosk restock', 15, 'received'),
+    ('2026-01-21'::text, 888888888, 777777777, 8901234567890, 'New store opening stock', 20, 'received'),
+    ('2026-01-21'::text, 999999999, 666666666, 1234567890123, 'City center grand opening', 5, 'in_transit'),
+    ('2026-01-21'::text, 999999999, 846546546, 4567890123456, 'USB-C hub restock', 20, 'received')
+) AS v(date, id_store_sent, id_store_receive, id_product, reason, quantity, status)
 WHERE NOT EXISTS (
     SELECT 1 FROM transfer 
     WHERE transfer.date = v.date::date 

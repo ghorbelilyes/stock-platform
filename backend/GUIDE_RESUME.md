@@ -26,6 +26,7 @@
    │ - quantity│      │ - quantity │    │ - id_store │
    └─────┬─────┘      └─────┬──────┘    │   _receive │
          │                  │            │ - id_prod  │
+         │                  │            │ - status   │ (approved|in_transit|received|closed)
          └──────────────────┼────────────┴─────┬──────┘
                             │                  │
                     ┌───────▼───────┐    ┌─────▼──────┐
@@ -153,6 +154,7 @@ File Columns          →  Backend Columns
 | **CsvProcessingService** | Parse CSV files | `parseHeaders()`, `processCsvFile()` |
 | **ColumnMappingService** | Transform CSV columns | `transformRow()`, `validateMapping()` |
 | **DataImportService** | Import data to DB | `importStockData()`, `importSalesData()`, `importTransferData()` |
+| **TransferSuggestionService** | Transfer suggestions from stock | `getSuggestions()`, `approveSuggestion(suggestionId, quantity)` |
 
 ---
 
@@ -173,7 +175,7 @@ http://localhost:8080/api
 | **CategoryController** | `/categories` | Category CRUD, manage products in category |
 | **StockController** | `/stocks` | Stock queries (filter by store/product) |
 | **SalesController** | `/sales` | Sales queries (filter by store/product/date) |
-| **TransferController** | `/transfers` | Transfer queries (filter by stores/product/date) |
+| **TransferController** | `/transfers` | Transfer queries (filter by stores/product/date); `GET /suggestions`, `POST /suggestions/approve` (transfer suggestions) |
 
 ### Key Category Endpoints
 
@@ -223,6 +225,10 @@ All endpoints return `ApiResponse<T>`:
 - Implemented via `@IdClass(StockId.class)`
 - Ensures unique stock entry per store-product combination
 
+### Transfer Status & Suggestions
+- **Transfer.status**: `approved` | `in_transit` | `received` | `closed`. Migration `003_add_transfer_status.sql`. New transfers from approved suggestions get `in_transit`.
+- **Transfer suggestions**: `GET /transfers/suggestions` returns computed suggestions (donor stores with excess → receiver stores with low/zero stock). `POST /transfers/suggestions/approve` body: `{ "suggestionId": "fromStoreId-toStoreId-productId", "quantity"?: number }` creates the transfer.
+
 ### Lazy Loading
 - All relationships use `FetchType.LAZY` except `Product.category` (EAGER)
 - Access lazy relationships inside transaction or use `@EntityGraph` / `JOIN FETCH`
@@ -258,5 +264,5 @@ All endpoints return `ApiResponse<T>`:
 
 ---
 
-**Last Updated:** 2024-01-21  
-**Version:** 1.0.0
+**Last Updated:** 2026-02-05  
+**Version:** 1.1.0

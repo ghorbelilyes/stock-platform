@@ -1,8 +1,12 @@
 package com.inventory.orchestrator.controller;
 
 import com.inventory.orchestrator.dto.ApiResponse;
+import com.inventory.orchestrator.dto.ApproveSuggestionRequest;
+import com.inventory.orchestrator.dto.TransferSuggestionDTO;
+import com.inventory.orchestrator.dto.TransferView;
 import com.inventory.orchestrator.entity.Transfer;
 import com.inventory.orchestrator.repository.TransferRepository;
+import com.inventory.orchestrator.service.TransferSuggestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Page;
@@ -13,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/transfers")
@@ -20,14 +25,16 @@ import java.time.LocalDate;
 public class TransferController {
     
     private final TransferRepository transferRepository;
+    private final TransferSuggestionService suggestionService;
     
     @Autowired
-    public TransferController(TransferRepository transferRepository) {
+    public TransferController(TransferRepository transferRepository, TransferSuggestionService suggestionService) {
         this.transferRepository = transferRepository;
+        this.suggestionService = suggestionService;
     }
     
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<Transfer>>> getAllTransfers(
+    public ResponseEntity<ApiResponse<Page<TransferView>>> getAllTransfers(
         @RequestParam(required = false) Long storeSent,
         @RequestParam(required = false) Long storeReceive,
         @RequestParam(required = false) Long productId,
@@ -45,7 +52,7 @@ public class TransferController {
         Sort sortObj = parseSortParameter(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
         
-        Page<Transfer> transfers = transferRepository.findTransfersWithFilters(
+        Page<TransferView> transfers = transferRepository.findTransfersWithFiltersView(
             storeSent,
             storeReceive,
             productId,
@@ -56,6 +63,30 @@ public class TransferController {
         );
         
         return ResponseEntity.ok(ApiResponse.success(transfers, "Transfers retrieved successfully"));
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<ApiResponse<List<TransferSuggestionDTO>>> getSuggestions() {
+        List<TransferSuggestionDTO> suggestions = suggestionService.getSuggestions();
+        return ResponseEntity.ok(ApiResponse.success(suggestions, "Transfer suggestions retrieved successfully"));
+    }
+
+    @PostMapping("/suggestions/approve")
+    public ResponseEntity<ApiResponse<Transfer>> approveSuggestion(@RequestBody ApproveSuggestionRequest request) {
+        if (request == null || request.getSuggestionId() == null || request.getSuggestionId().isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
+        }
+        try {
+            Transfer transfer = suggestionService.approveSuggestion(
+                request.getSuggestionId().trim(),
+                request.getQuantity()
+            );
+            return ResponseEntity.ok(ApiResponse.success(transfer, "Transfer created successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
+        }
     }
 
     private Sort parseSortParameter(String sort) {

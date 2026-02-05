@@ -2,7 +2,7 @@ package com.inventory.orchestrator.controller;
 
 import com.inventory.orchestrator.dto.ApiResponse;
 import com.inventory.orchestrator.dto.StockView;
-import com.inventory.orchestrator.repository.StockRepository;
+import com.inventory.orchestrator.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,11 +20,11 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Stocks", description = "Stock management and query endpoints")
 public class StockController {
     
-    private final StockRepository stockRepository;
+    private final StockService stockService;
     
     @Autowired
-    public StockController(StockRepository stockRepository) {
-        this.stockRepository = stockRepository;
+    public StockController(StockService stockService) {
+        this.stockService = stockService;
     }
     
     @GetMapping
@@ -51,7 +51,7 @@ public class StockController {
         Sort sortObj = parseSortParameter(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
         
-        Page<StockView> stocks = stockRepository.findViewsWithFilters(
+        Page<StockView> stocks = stockService.getStocksWithTransfers(
             storeId,
             productId,
             normalize(search),
@@ -68,7 +68,7 @@ public class StockController {
     @GetMapping("/store/{storeId}")
     @Operation(
         summary = "Get stocks by store ID",
-        description = "Retrieve all stock entries for a specific store with pagination support"
+        description = "Retrieve all stock entries for a specific store with pagination and incoming/outgoing transfer quantities"
     )
     public ResponseEntity<ApiResponse<Page<StockView>>> getStocksByStoreId(
         @Parameter(description = "Store ID", required = true, example = "1") @PathVariable Long storeId,
@@ -76,14 +76,14 @@ public class StockController {
         @Parameter(description = "Page size", example = "20") @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<StockView> stocks = stockRepository.findByIdStoreView(storeId, pageable);
+        Page<StockView> stocks = stockService.getStocksByStoreIdWithTransfers(storeId, pageable);
         return ResponseEntity.ok(ApiResponse.success(stocks, "Stocks retrieved successfully for store ID: " + storeId));
     }
     
     @GetMapping("/product/{productId}")
     @Operation(
         summary = "Get stocks by product ID",
-        description = "Retrieve all stock entries for a specific product across all stores with pagination support"
+        description = "Retrieve all stock entries for a specific product across all stores with pagination and incoming/outgoing transfer quantities"
     )
     public ResponseEntity<ApiResponse<Page<StockView>>> getStocksByProductId(
         @Parameter(description = "Product ID", required = true, example = "1") @PathVariable Long productId,
@@ -91,7 +91,7 @@ public class StockController {
         @Parameter(description = "Page size", example = "20") @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<StockView> stocks = stockRepository.findByIdProductView(productId, pageable);
+        Page<StockView> stocks = stockService.getStocksByProductIdWithTransfers(productId, pageable);
         return ResponseEntity.ok(ApiResponse.success(stocks, "Stocks retrieved successfully for product ID: " + productId));
     }
 

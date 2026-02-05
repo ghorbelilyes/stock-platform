@@ -92,6 +92,7 @@ com.inventory.orchestrator/
    │           │      │ - rangeDate│    │   (FK)     │
    │ (PK: store│      │            │    │ - id_prod  │
    │  + product)│     │            │    │   (FK)     │
+   │           │      │            │    │ - status   │ (approved|in_transit|received|closed)
    └─────┬─────┘      └─────┬──────┘    └─────┬──────┘
          │                  │                  │
          │                  │                  │
@@ -302,6 +303,7 @@ public class Transfer {
     private Long idProduct;        // FK to Product
     private String reason;
     private Integer quantity;
+    private String status;         // approved | in_transit | received | closed (lifecycle: en cours → reçu → clôturé)
     
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "id_store_sent", insertable = false, updatable = false)
@@ -317,7 +319,7 @@ public class Transfer {
 }
 ```
 
-**Purpose:** Records of product transfers between stores, including reason and date.
+**Purpose:** Records of product transfers between stores, including reason, date, and status (approved / in_transit / received / closed).
 
 ### FileUpload Entity
 ```java
@@ -388,10 +390,12 @@ http://localhost:8080/api
 - `GET /` - Get sales with filters (storeId, productId, dateRange, pagination)
 
 #### TransferController (`/api/transfers`)
-**Purpose:** Transfer records queries.
+**Purpose:** Transfer records queries and transfer suggestions (computed from stock levels).
 
 **Endpoints:**
-- `GET /` - Get transfers with filters (storeSent, storeReceive, productId, dateRange)
+- `GET /` - Get transfers with filters (storeSent, storeReceive, productId, dateRange, sort, search, page, size)
+- `GET /suggestions` - Get transfer suggestions (computed: stores with excess → stores with low/zero stock)
+- `POST /suggestions/approve` - Approve a suggestion: create the actual transfer. Body: `{ "suggestionId": "fromStoreId-toStoreId-productId", "quantity"?: number }`. Returns the created `Transfer` with status `in_transit`.
 
 ### API Response Format
 
@@ -444,6 +448,15 @@ All endpoints return `ApiResponse<T>`:
 - **STOCK:** `id_store`, `id_product`, `quantity`
 - **SALES:** `id_store`, `id_product`, `quantity`, `range_date`
 - **TRANSFER:** `date`, `id_store_sent`, `id_store_receive`, `id_product`, `reason`, `quantity`
+
+### TransferSuggestionService
+**Purpose:** Compute transfer suggestions from stock levels and create transfers when a suggestion is approved.
+
+**Key Methods:**
+- `getSuggestions()` - Returns list of `TransferSuggestionDTO`. Logic: for each product, find stores with excess (quantity ≥ threshold and above average) and stores with low/zero stock; suggest transfers from donor to receiver. Suggestion id format: `fromStoreId-toStoreId-productId`. Priority: high (receiver 0), medium (receiver &lt; 3), low. Confidence 0–100. Max 50 suggestions.
+- `approveSuggestion(suggestionId, quantityOverride)` - Parses suggestion id, creates a `Transfer` with status `in_transit`, reason "Approved transfer suggestion", saves and returns it.
+
+**Dependencies:** StockRepository, TransferRepository. Uses StockView (store/product names) via StockRepository.findViewsWithFilters().
 
 ### DataImportService
 **Purpose:** Import validated CSV data into database.
@@ -586,9 +599,10 @@ repository/
 ### Service Files
 ```
 service/
-├── CsvProcessingService.java    # CSV parsing
-├── ColumnMappingService.java    # Column transformation
-└── DataImportService.java        # Data import logic
+├── CsvProcessingService.java       # CSV parsing
+├── ColumnMappingService.java       # Column transformation
+├── DataImportService.java         # Data import logic
+└── TransferSuggestionService.java # Transfer suggestions (from stock) and approve
 ```
 
 ### Controller Files
@@ -605,12 +619,15 @@ controller/
 ```
 dto/
 ├── ApiResponse.java             # Standard API response wrapper
+├── ApproveSuggestionRequest.java # Body for POST /transfers/suggestions/approve
 ├── ColumnMappingDTO.java        # Single column mapping
 ├── FileMappingConfigDTO.java    # Complete mapping configuration
 ├── ValidationResult.java        # Validation results
 ├── ImportResult.java            # Import statistics
 ├── ParseHeadersResponse.java    # CSV header parsing result
-└── RequiredColumnsResponse.java # Required columns response
+├── RequiredColumnsResponse.java # Required columns response
+├── TransferSuggestionDTO.java   # Transfer suggestion (from store, to store, product, quantity, priority, reason, confidence)
+└── ... (StockView, SalesView, etc.)
 ```
 
 ---
@@ -734,12 +751,14 @@ CREATE TABLE transfer (
     id_product BIGINT NOT NULL,
     reason TEXT,
     quantity INTEGER NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'in_transit',  -- approved | in_transit | received | closed
     FOREIGN KEY (id_store_sent) REFERENCES store(id),
     FOREIGN KEY (id_store_receive) REFERENCES store(id),
     FOREIGN KEY (id_product) REFERENCES product(id),
     CHECK (id_store_sent != id_store_receive)
 );
 ```
+Migration: `003_add_transfer_status.sql` adds the `status` column.
 
 ### Table: file_upload
 ```sql
@@ -852,6 +871,6 @@ CREATE TABLE file_upload_errors (
 
 ---
 
-**Last Updated:** 2024-01-21  
-**Version:** 1.0.0  
+**Last Updated:** 2026-02-05  
+**Version:** 1.1.0  
 **For:** AI Agents working on this codebase

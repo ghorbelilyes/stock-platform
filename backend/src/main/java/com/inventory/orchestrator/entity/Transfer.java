@@ -31,6 +31,9 @@ public class Transfer {
     @Column(nullable = false)
     private Integer quantity;
     
+    @Column(length = 32, nullable = false)
+    private String status = "in_transit"; // approved, in_transit, received, closed
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_product", insertable = false, updatable = false)
     @JsonIgnore
@@ -50,12 +53,17 @@ public class Transfer {
     }
     
     public Transfer(LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity) {
+        this(date, idStoreSent, idStoreReceive, idProduct, reason, quantity, "in_transit");
+    }
+    
+    public Transfer(LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity, String status) {
         this.date = date;
         this.idStoreSent = idStoreSent;
         this.idStoreReceive = idStoreReceive;
         this.idProduct = idProduct;
         this.reason = reason;
         this.quantity = quantity;
+        this.status = status != null ? status : "in_transit";
     }
     
     public Long getId() {
@@ -112,6 +120,14 @@ public class Transfer {
     
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+    
+    public String getStatus() {
+        return status;
+    }
+    
+    public void setStatus(String status) {
+        this.status = status != null ? status : "in_transit";
     }
     
     public Product getProduct() {

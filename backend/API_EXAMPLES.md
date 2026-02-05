@@ -200,8 +200,8 @@ curl "http://localhost:8080/api/sales?startDate=2024-01-01&endDate=2024-12-31&pa
 
 **Request:**
 ```bash
-# Get all transfers
-curl http://localhost:8080/api/transfers
+# Get all transfers (paginated)
+curl "http://localhost:8080/api/transfers?page=0&size=20"
 
 # Get transfers for a store (as sender)
 curl "http://localhost:8080/api/transfers?storeSent=1"
@@ -211,6 +211,40 @@ curl "http://localhost:8080/api/transfers?storeReceive=2"
 
 # Get transfers for a product
 curl "http://localhost:8080/api/transfers?productId=5"
+
+# With sort and search
+curl "http://localhost:8080/api/transfers?sort=date,desc&search=restock"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "date": "2024-01-20",
+        "idStoreSent": 1,
+        "idStoreReceive": 2,
+        "idProduct": 5,
+        "reason": "Low stock at destination",
+        "quantity": 50,
+        "status": "in_transit"
+      }
+    ],
+    "totalElements": 1
+  },
+  "message": "Transfers retrieved successfully"
+}
+```
+Note: `status` is one of `approved`, `in_transit`, `received`, `closed` (transfer lifecycle: en cours → reçu → clôturé).
+
+### 6. Get Transfer Suggestions
+
+**Request:**
+```bash
+curl http://localhost:8080/api/transfers/suggestions
 ```
 
 **Response:**
@@ -219,18 +253,58 @@ curl "http://localhost:8080/api/transfers?productId=5"
   "success": true,
   "data": [
     {
-      "id": 1,
-      "date": "2024-01-20",
-      "idStoreSent": 1,
-      "idStoreReceive": 2,
-      "idProduct": 5,
-      "reason": "Low stock at destination",
-      "quantity": 50
+      "id": "999999999-666666666-1234567890123",
+      "fromStoreId": 999999999,
+      "fromStoreName": "Main Warehouse",
+      "toStoreId": 666666666,
+      "toStoreName": "City Center",
+      "sku": "1234567890123",
+      "productId": 1234567890123,
+      "productName": "Laptop Dell XPS 15",
+      "quantity": 5,
+      "priority": "high",
+      "reason": "Stock out at destination",
+      "confidence": 95,
+      "createdAt": "2026-02-05T12:00:00Z"
     }
   ],
-  "message": "Transfers retrieved successfully"
+  "message": "Transfer suggestions retrieved successfully"
 }
 ```
+Suggestion `id` format: `fromStoreId-toStoreId-productId`. Use this `id` when approving.
+
+### 7. Approve Transfer Suggestion
+
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/transfers/suggestions/approve \
+  -H "Content-Type: application/json" \
+  -d '{"suggestionId": "999999999-666666666-1234567890123"}'
+
+# Optional: override quantity
+curl -X POST http://localhost:8080/api/transfers/suggestions/approve \
+  -H "Content-Type: application/json" \
+  -d '{"suggestionId": "999999999-666666666-1234567890123", "quantity": 10}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 42,
+    "date": "2026-02-05",
+    "idStoreSent": 999999999,
+    "idStoreReceive": 666666666,
+    "idProduct": 1234567890123,
+    "reason": "Approved transfer suggestion",
+    "quantity": 5,
+    "status": "in_transit"
+  },
+  "message": "Transfer created successfully"
+}
+```
+The created transfer has status `in_transit` (en route).
 
 ## Error Responses
 

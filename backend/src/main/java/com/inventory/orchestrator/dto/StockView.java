@@ -4,6 +4,10 @@ public class StockView {
     private Long idStore;
     private Long idProduct;
     private Integer quantity;
+    /** Sum of quantities from transfers (status in_transit/approved/picked) to this store for this product */
+    private Integer incomingQty;
+    /** Sum of quantities from transfers (status in_transit/approved/picked) from this store for this product */
+    private Integer outgoingQty;
     private StoreInfo store;
     private ProductInfo product;
 
@@ -27,6 +31,8 @@ public class StockView {
         this.quantity = quantity;
         this.store = new StoreInfo(storeId, storeSerialNumber, storeName, storeCity, storeType, storeLeadTimeDays);
         this.product = new ProductInfo(productId, productCodeBarre, productName, productDescription);
+        this.incomingQty = 0;
+        this.outgoingQty = 0;
     }
 
     public Long getIdStore() {
@@ -39,6 +45,22 @@ public class StockView {
 
     public Integer getQuantity() {
         return quantity;
+    }
+
+    public Integer getIncomingQty() {
+        return incomingQty != null ? incomingQty : 0;
+    }
+
+    public void setIncomingQty(Integer incomingQty) {
+        this.incomingQty = incomingQty;
+    }
+
+    public Integer getOutgoingQty() {
+        return outgoingQty != null ? outgoingQty : 0;
+    }
+
+    public void setOutgoingQty(Integer outgoingQty) {
+        this.outgoingQty = outgoingQty;
     }
 
     public StoreInfo getStore() {

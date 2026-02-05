@@ -5,13 +5,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
+
+type ViewMode = 'store' | 'product';
 
 interface StockData {
     idStore: number;
     idProduct: number;
     quantity: number;
+    /** Quantity arriving at this store for this product (transfers in_transit to this store) */
+    incomingQty: number;
+    /** Quantity leaving this store for this product (transfers in_transit from this store) */
+    outgoingQty: number;
+    /** quantity + incomingQty - outgoingQty */
+    virtualQuantity: number;
     store?: {
         id: number;
         name: string;
@@ -30,14 +39,21 @@ interface StockData {
 @Component({
     selector: 'app-stock',
     standalone: true,
-    imports: [CommonModule, FormsModule, TranslateModule, TableModule, TagModule, InputTextModule, StatusPillComponent],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, TagModule, InputTextModule, SelectButtonModule, StatusPillComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
                 <div class="card">
-                    <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-6">{{ 'stock.title' | translate }}</h1>
-                    <p class="text-muted-color mb-6">{{ 'stock.description' | translate }}</p>
-                    
+                    <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                        <div>
+                            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'stock.title' | translate }}</h1>
+                            <p class="text-muted-color">{{ 'stock.description' | translate }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-surface-600 dark:text-surface-400">{{ 'stock.viewMode' | translate }}:</span>
+                            <p-selectButton [options]="viewModeOptions" [(ngModel)]="viewMode" (onChange)="onViewModeChange()" optionLabel="label" optionValue="value"></p-selectButton>
+                        </div>
+                    </div>
                     <p-table 
                         [value]="stockData" 
                         [paginator]="true" 
@@ -108,8 +124,16 @@ interface StockData {
                                 </th>
                                 <th [pSortableColumn]="'quantity'">
                                     <div class="flex items-center gap-2">
-                                        <span>{{ 'common.quantity' | translate }}</span>
+                                        <span>{{ 'stock.onHand' | translate }}</span>
                                         <p-sortIcon [field]="'quantity'"></p-sortIcon>
+                                    </div>
+                                </th>
+                                <th>{{ 'stock.incoming' | translate }}</th>
+                                <th>{{ 'stock.outgoing' | translate }}</th>
+                                <th [pSortableColumn]="'virtualQuantity'">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ 'stock.virtualQuantity' | translate }}</span>
+                                        <p-sortIcon [field]="'virtualQuantity'"></p-sortIcon>
                                     </div>
                                 </th>
                                 <th>{{ 'common.status' | translate }}</th>
@@ -117,7 +141,7 @@ interface StockData {
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="6" class="text-center py-8 text-muted-color">
+                                <td colspan="9" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
                                         <p class="mb-2">{{ 'common.noData' | translate }}</p>
                                     </div>
@@ -133,6 +157,17 @@ interface StockData {
                                 </td>
                                 <td>{{ stock.product?.name || 'N/A' }}</td>
                                 <td>{{ stock.quantity }}</td>
+                                <td>
+                                    <span *ngIf="stock.incomingQty > 0" class="font-medium text-primary">+{{ stock.incomingQty }}</span>
+                                    <span *ngIf="stock.incomingQty === 0" class="text-muted-color">0</span>
+                                </td>
+                                <td>
+                                    <span *ngIf="stock.outgoingQty > 0" class="font-medium text-orange-500">-{{ stock.outgoingQty }}</span>
+                                    <span *ngIf="stock.outgoingQty === 0" class="text-muted-color">0</span>
+                                </td>
+                                <td>
+                                    <span [class.font-semibold]="stock.virtualQuantity !== stock.quantity">{{ stock.virtualQuantity }}</span>
+                                </td>
                                 <td>
                                     <app-status-pill 
                                         [status]="getStockStatus(stock)"
@@ -150,19 +185,62 @@ interface StockData {
 export class StockComponent implements OnInit {
     private inventoryService = inject(InventoryDataService);
     private translateService = inject(TranslateService);
+
     stockData: StockData[] = [];
     loading = false;
     totalRecords = 0;
     pageSize = 20;
+
+    viewMode: ViewMode = 'store';
+    viewModeOptions = [
+        { label: 'By store', value: 'store' as ViewMode },
+        { label: 'By product', value: 'product' as ViewMode }
+    ];
     
     // Search and sort state
     globalSearch: string = '';
-    currentSortField: string = 'idStore';
+    currentSortField: string = 'store.name';
     currentSortOrder: number = 1;
     tableFilters: { [key: string]: any } = {};
 
     ngOnInit() {
-        // Initial load will be triggered by lazy load
+        this.viewModeOptions[0].label = this.translateService.instant('stock.viewByStore');
+        this.viewModeOptions[1].label = this.translateService.instant('stock.viewByProduct');
+    }
+
+    /** Map API stock row (with incomingQty, outgoingQty) to StockData and compute virtualQuantity */
+    private mapStockRow(row: any): StockData {
+        const quantity = row.quantity ?? 0;
+        const incomingQty = row.incomingQty ?? 0;
+        const outgoingQty = row.outgoingQty ?? 0;
+        return {
+            idStore: row.idStore ?? row.store?.id,
+            idProduct: row.idProduct ?? row.product?.id,
+            quantity,
+            incomingQty,
+            outgoingQty,
+            virtualQuantity: quantity + incomingQty - outgoingQty,
+            store: row.store,
+            product: row.product
+        };
+    }
+
+    onViewModeChange() {
+        if (this.viewMode === 'product') {
+            this.currentSortField = 'product.name';
+            this.currentSortOrder = 1;
+        } else {
+            this.currentSortField = 'store.name';
+            this.currentSortOrder = 1;
+        }
+        const lazyEvent: TableLazyLoadEvent = {
+            first: 0,
+            rows: this.pageSize,
+            sortField: this.currentSortField,
+            sortOrder: this.currentSortOrder,
+            filters: this.tableFilters
+        };
+        this.loadStockDataLazy(lazyEvent);
     }
 
     loadStockDataLazy(event: TableLazyLoadEvent) {
@@ -225,28 +303,9 @@ export class StockComponent implements OnInit {
 
         this.inventoryService.getStocks(page, size, sortParam, searchTerm, filterParams).subscribe({
             next: (response) => {
-                if (response && response.content) {
-                    this.stockData = response.content.map((stock: any) => ({
-                        idStore: stock.idStore,
-                        idProduct: stock.idProduct,
-                        quantity: stock.quantity,
-                        store: stock.store,
-                        product: stock.product
-                    }));
-                    this.totalRecords = response.totalElements || 0;
-                } else if (Array.isArray(response)) {
-                    this.stockData = response.map((stock: any) => ({
-                        idStore: stock.idStore,
-                        idProduct: stock.idProduct,
-                        quantity: stock.quantity,
-                        store: stock.store,
-                        product: stock.product
-                    }));
-                    this.totalRecords = response.length;
-                } else {
-                    this.stockData = [];
-                    this.totalRecords = 0;
-                }
+                const rawList = response?.content ?? (Array.isArray(response) ? response : []);
+                this.stockData = rawList.map((row: any) => this.mapStockRow(row));
+                this.totalRecords = response?.totalElements ?? (Array.isArray(response) ? response.length : 0);
                 this.loading = false;
             },
             error: (error) => {
@@ -288,8 +347,9 @@ export class StockComponent implements OnInit {
     }
 
     getStockStatus(stock: StockData): 'ok' | 'low' | 'out' {
-        if (stock.quantity <= 0) return 'out';
-        if (stock.quantity < 10) return 'low';
+        const q = stock.virtualQuantity;
+        if (q <= 0) return 'out';
+        if (q < 10) return 'low';
         return 'ok';
     }
 
