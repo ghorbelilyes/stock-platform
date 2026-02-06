@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -181,13 +181,13 @@ public class TransferSuggestionService {
         if (quantity <= 0) quantity = 1;
 
         Transfer t = new Transfer(
-            LocalDate.now(),
+            LocalDateTime.now(),
             fromStoreId,
             toStoreId,
             productId,
             "Approved transfer suggestion",
             quantity,
-            "in_transit"  // approved, en route
+            "approved"  // Status: approved (will move to in_transit later)
         );
         return transferRepository.save(t);
     }

@@ -11,6 +11,8 @@ export const API_CONFIG = {
         requiredColumns: '/files/required-columns',
         validateFile: '/files/validate',
         uploadFile: '/files/upload',
+        validateStockConsistency: '/files/validate-consistency',
+        checkDatabaseConsistency: '/files/check-database-consistency',
         
         // Data retrieval
         stores: '/stores',

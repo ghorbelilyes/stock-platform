@@ -65,30 +65,45 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE product.code_barre = v.code_barre)
 AND EXISTS (SELECT 1 FROM category WHERE category.id = v.category_id);
 
--- Insert Stock (only if they don't exist)
+-- Insert Stock - Initial stock levels (as of 2025-01-14, before update)
+-- These represent "yesterday's stock" before the CSV update for 2025-01-15
 -- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
 INSERT INTO stock (id_store, id_product, quantity)
 SELECT * FROM (VALUES
-    (846546546, 1234567890123, 25),   -- Main Store - Laptop Dell XPS 15
-    (846546546, 2345678901234, 150),  -- Main Store - Wireless Mouse
-    (846546546, 3456789012345, 80),   -- Main Store - Mechanical Keyboard
-    (846546546, 4567890123456, 60),   -- Main Store - USB-C Hub
-    (846546546, 5678901234567, 15),   -- Main Store - Monitor
-    (846546546, 6789012345678, 40),   -- Main Store - Webcam
-    (846546546, 7890123456789, 30),   -- Main Store - Standing Desk Converter
-    (846546546, 8901234567890, 50),   -- Main Store - Headphones
-    (846546546, 9012345678901, 35),   -- Main Store - External SSD
-    (846546546, 123456789012, 20),    -- Main Store - Docking Station
-    (123456789, 1234567890123, 30),   -- Secondary Store - Laptop Dell XPS 15
-    (123456789, 2345678901234, 120),  -- Secondary Store - Wireless Mouse
-    (123456789, 3456789012345, 100),  -- Secondary Store - Mechanical Keyboard
-    (123456789, 4567890123456, 75),   -- Secondary Store - USB-C Hub
-    (123456789, 5678901234567, 20),   -- Secondary Store - Monitor
-    (123456789, 6789012345678, 45),   -- Secondary Store - Webcam
-    (123456789, 7890123456789, 25),   -- Secondary Store - Standing Desk Converter
-    (123456789, 8901234567890, 60),   -- Secondary Store - Headphones
-    (123456789, 9012345678901, 40),   -- Secondary Store - External SSD
-    (123456789, 123456789012, 15),    -- Secondary Store - Docking Station
+    -- Main Store (846546546) - Initial stock (before 2025-01-15 update)
+    (846546546, 1234567890123, 190),  -- Main Store - Laptop Dell XPS 15 (will become 150 after operations)
+    (846546546, 2345678901234, 230),  -- Main Store - Wireless Mouse (will become 225 after operations)
+    (846546546, 3456789012345, 75),   -- Main Store - Mechanical Keyboard (will become 75 after operations)
+    (846546546, 4567890123456, 60),   -- Main Store - USB-C Hub (no change)
+    (846546546, 5678901234567, 15),   -- Main Store - Monitor (no change)
+    (846546546, 6789012345678, 40),   -- Main Store - Webcam (no change)
+    (846546546, 7890123456789, 30),   -- Main Store - Standing Desk Converter (no change)
+    (846546546, 8901234567890, 50),   -- Main Store - Headphones (no change)
+    (846546546, 9012345678901, 35),   -- Main Store - External SSD (no change)
+    (846546546, 123456789012, 20),    -- Main Store - Docking Station (no change)
+    -- Secondary Store (123456789) - Initial stock (before 2025-01-15 update)
+    (123456789, 1234567890123, 30),   -- Secondary Store - Laptop Dell XPS 15 (no change)
+    (123456789, 2345678901234, 120),  -- Secondary Store - Wireless Mouse (no change)
+    (123456789, 3456789012345, 100),  -- Secondary Store - Mechanical Keyboard (no change)
+    (123456789, 4567890123456, 95),   -- Secondary Store - USB-C Hub (will become 100 after operations)
+    (123456789, 5678901234567, 20),   -- Secondary Store - Monitor (no change)
+    (123456789, 6789012345678, 45),   -- Secondary Store - Webcam (no change)
+    (123456789, 7890123456789, 25),   -- Secondary Store - Standing Desk Converter (no change)
+    (123456789, 8901234567890, 60),   -- Secondary Store - Headphones (no change)
+    (123456789, 9012345678901, 40),   -- Secondary Store - External SSD (no change)
+    (123456789, 123456789012, 15),    -- Secondary Store - Docking Station (no change)
+    -- Airport Kiosk (111111111) - Initial stock
+    (111111111, 1234567890123, 0),    -- Airport Kiosk - Laptop (out)
+    (111111111, 2345678901234, 2),    -- Airport Kiosk - Mouse (low)
+    (111111111, 3456789012345, 0),    -- Airport Kiosk - Keyboard (out)
+    (111111111, 4567890123456, 0),    -- Airport Kiosk - USB-C Hub (out)
+    (111111111, 5678901234567, 0),    -- Airport Kiosk - Monitor (out)
+    (111111111, 6789012345678, 0),    -- Airport Kiosk - Webcam (out)
+    (111111111, 7890123456789, 0),    -- Airport Kiosk - Standing Desk (out)
+    (111111111, 8901234567890, 1),    -- Airport Kiosk - Headphones (low)
+    (111111111, 9012345678901, 0),    -- Airport Kiosk - External SSD (out)
+    (111111111, 123456789012, 0),     -- Airport Kiosk - Docking Station (out)
+    -- Main Warehouse (999999999) - Initial stock (warehouses don't change in this update)
     (999999999, 1234567890123, 100),  -- Main Warehouse - Laptop Dell XPS 15
     (999999999, 2345678901234, 200),  -- Main Warehouse - Wireless Mouse
     (999999999, 3456789012345, 150),  -- Main Warehouse - Mechanical Keyboard
@@ -98,7 +113,40 @@ SELECT * FROM (VALUES
     (999999999, 7890123456789, 90),   -- Main Warehouse - Standing Desk Converter
     (999999999, 8901234567890, 150),  -- Main Warehouse - Headphones
     (999999999, 9012345678901, 100),  -- Main Warehouse - External SSD
-    (999999999, 123456789012, 80)     -- Main Warehouse - Docking Station
+    (999999999, 123456789012, 80),    -- Main Warehouse - Docking Station
+    -- East Coast Distribution (888888888) - Initial stock
+    (888888888, 1234567890123, 0),    -- East Coast Distribution - Laptop
+    (888888888, 2345678901234, 0),    -- East Coast Distribution - Mouse
+    (888888888, 3456789012345, 0),    -- East Coast Distribution - Keyboard
+    (888888888, 4567890123456, 0),    -- East Coast Distribution - USB-C Hub
+    (888888888, 5678901234567, 0),    -- East Coast Distribution - Monitor
+    (888888888, 6789012345678, 0),    -- East Coast Distribution - Webcam
+    (888888888, 7890123456789, 0),    -- East Coast Distribution - Standing Desk
+    (888888888, 8901234567890, 0),    -- East Coast Distribution - Headphones
+    (888888888, 9012345678901, 0),    -- East Coast Distribution - External SSD
+    (888888888, 123456789012, 0),     -- East Coast Distribution - Docking Station
+    -- Suburban Store (777777777) - Initial stock
+    (777777777, 1234567890123, 0),    -- Suburban - Laptop
+    (777777777, 2345678901234, 0),    -- Suburban - Mouse
+    (777777777, 3456789012345, 0),    -- Suburban - Keyboard
+    (777777777, 4567890123456, 3),    -- Suburban - USB-C Hub (low)
+    (777777777, 5678901234567, 0),    -- Suburban - Monitor
+    (777777777, 6789012345678, 0),    -- Suburban - Webcam
+    (777777777, 7890123456789, 0),    -- Suburban - Standing Desk (out)
+    (777777777, 8901234567890, 0),    -- Suburban - Headphones
+    (777777777, 9012345678901, 0),    -- Suburban - External SSD
+    (777777777, 123456789012, 2),     -- Suburban - Docking Station (low)
+    -- City Center (666666666) - Initial stock
+    (666666666, 1234567890123, 2),    -- City Center - Laptop (low)
+    (666666666, 2345678901234, 0),    -- City Center - Mouse
+    (666666666, 3456789012345, 0),    -- City Center - Keyboard (out)
+    (666666666, 4567890123456, 0),    -- City Center - USB-C Hub
+    (666666666, 5678901234567, 0),    -- City Center - Monitor
+    (666666666, 6789012345678, 1),    -- City Center - Webcam (low)
+    (666666666, 7890123456789, 0),    -- City Center - Standing Desk
+    (666666666, 8901234567890, 0),    -- City Center - Headphones
+    (666666666, 9012345678901, 0),    -- City Center - External SSD (out)
+    (666666666, 123456789012, 0)      -- City Center - Docking Station
 ) AS v(id_store, id_product, quantity)
 WHERE NOT EXISTS (
     SELECT 1 FROM stock 
@@ -107,37 +155,36 @@ WHERE NOT EXISTS (
 AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
 AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
 
--- Stock for stores with low/zero levels to generate transfer suggestions (Airport Kiosk, City Center, Suburban)
-INSERT INTO stock (id_store, id_product, quantity)
-SELECT * FROM (VALUES
-    (111111111, 1234567890123, 0),    -- Airport Kiosk - Laptop (out)
-    (111111111, 2345678901234, 2),    -- Airport Kiosk - Mouse (low)
-    (111111111, 5678901234567, 0),    -- Airport Kiosk - Monitor (out)
-    (111111111, 8901234567890, 1),    -- Airport Kiosk - Headphones (low)
-    (666666666, 1234567890123, 2),    -- City Center - Laptop (low)
-    (666666666, 3456789012345, 0),    -- City Center - Keyboard (out)
-    (666666666, 6789012345678, 1),    -- City Center - Webcam (low)
-    (666666666, 9012345678901, 0),    -- City Center - External SSD (out)
-    (777777777, 4567890123456, 3),    -- Suburban - USB-C Hub (low)
-    (777777777, 7890123456789, 0),    -- Suburban - Standing Desk (out)
-    (777777777, 123456789012, 2)      -- Suburban - Docking Station (low)
-) AS v(id_store, id_product, quantity)
+-- Insert Sales (historical data - BEFORE 2025-01-15)
+-- Note: Sales for 2025-01-15 will come from CSV upload
+-- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
+INSERT INTO sales (range_date, id_store, id_product, quantity)
+SELECT 
+    v.range_date::timestamp,
+    v.id_store,
+    v.id_product,
+    v.quantity
+FROM (VALUES
+    -- Historical sales (before 2025-01-15) - minimal data for testing
+    ('2025-01-14 10:00:00'::text, 846546546, 2345678901234, 5),
+    ('2025-01-14 11:00:00'::text, 123456789, 4567890123456, 3),
+    ('2025-01-13 09:00:00'::text, 846546546, 5678901234567, 2),
+    ('2025-01-13 14:00:00'::text, 123456789, 8901234567890, 4)
+) AS v(range_date, id_store, id_product, quantity)
 WHERE NOT EXISTS (
-    SELECT 1 FROM stock
-    WHERE stock.id_store = v.id_store AND stock.id_product = v.id_product
+    SELECT 1 FROM sales 
+    WHERE sales.range_date = v.range_date::timestamp 
+    AND sales.id_store = v.id_store 
+    AND sales.id_product = v.id_product
 )
 AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
 AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
 
--- Insert Sales (last 14 days - ~200 records)
--- Using dates from the last 14 days from current date
--- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
-INSERT INTO sales (range_date, id_store, id_product, quantity)
-SELECT 
-    v.range_date::date,
-    v.id_store,
-    v.id_product,
-    v.quantity
+-- Note: Sales for 2025-01-15 should be uploaded via CSV file
+-- The CSV files in /backend/examples/ contain the data for 2025-01-15
+
+-- OLD SALES DATA (commented out - use CSV upload instead):
+/*
 FROM (VALUES
     ('2026-02-04'::text, 846546546, 5678901234567, 1),
     ('2026-02-04'::text, 846546546, 4567890123456, 3),
@@ -349,27 +396,41 @@ FROM (VALUES
     ('2026-01-21'::text, 123456789, 8901234567890, 2),
     ('2026-01-21'::text, 777777777, 123456789012, 3)
 ) AS v(range_date, id_store, id_product, quantity)
-WHERE NOT EXISTS (
-    SELECT 1 FROM sales 
-    WHERE sales.range_date = v.range_date::date 
-    AND sales.id_store = v.id_store 
-    AND sales.id_product = v.id_product
-)
-AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store)
-AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
+*/
 
--- Insert Transfers (last 14 days - ~30 records)
--- Warehouse to stores transfers; status: in_transit (en cours), received, closed
+-- Insert Transfers (historical data - BEFORE 2025-01-15)
+-- Note: Transfers for 2025-01-15 will come from CSV upload
 -- Using direct numeric IDs (ID = serial_number for stores, ID = code_barre for products)
 INSERT INTO transfer (date, id_store_sent, id_store_receive, id_product, reason, quantity, status)
 SELECT 
-    v.date::date,
+    v.date::timestamp,
     v.id_store_sent,
     v.id_store_receive,
     v.id_product,
     v.reason,
     v.quantity,
     v.status
+FROM (VALUES
+    -- Historical transfers (before 2025-01-15) - minimal data for testing
+    ('2025-01-14 08:00:00'::text, 999999999, 846546546, 2345678901234, 'Initial restock', 50, 'received'),
+    ('2025-01-13 09:00:00'::text, 999999999, 123456789, 4567890123456, 'Initial restock', 30, 'received')
+) AS v(date, id_store_sent, id_store_receive, id_product, reason, quantity, status)
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer 
+    WHERE transfer.date = v.date::timestamp 
+    AND transfer.id_store_sent = v.id_store_sent 
+    AND transfer.id_store_receive = v.id_store_receive
+    AND transfer.id_product = v.id_product
+)
+AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store_sent)
+AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store_receive)
+AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
+
+-- Note: Transfers for 2025-01-15 should be uploaded via CSV file
+-- The CSV files in /backend/examples/ contain the data for 2025-01-15
+
+-- OLD TRANSFER DATA (commented out - use CSV upload instead):
+/*
 FROM (VALUES
     ('2026-02-04'::text, 999999999, 846546546, 2345678901234, 'Low stock replenishment', 30, 'in_transit'),
     ('2026-02-03'::text, 999999999, 846546546, 5678901234567, 'Restock after high sales', 35, 'in_transit'),
@@ -402,13 +463,4 @@ FROM (VALUES
     ('2026-01-21'::text, 999999999, 666666666, 1234567890123, 'City center grand opening', 5, 'in_transit'),
     ('2026-01-21'::text, 999999999, 846546546, 4567890123456, 'USB-C hub restock', 20, 'received')
 ) AS v(date, id_store_sent, id_store_receive, id_product, reason, quantity, status)
-WHERE NOT EXISTS (
-    SELECT 1 FROM transfer 
-    WHERE transfer.date = v.date::date 
-    AND transfer.id_store_sent = v.id_store_sent 
-    AND transfer.id_store_receive = v.id_store_receive
-    AND transfer.id_product = v.id_product
-)
-AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store_sent)
-AND EXISTS (SELECT 1 FROM store WHERE store.id = v.id_store_receive)
-AND EXISTS (SELECT 1 FROM product WHERE product.id = v.id_product);
+*/

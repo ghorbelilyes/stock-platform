@@ -3,8 +3,10 @@ package com.inventory.orchestrator.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventory.orchestrator.dto.FileMappingConfigDTO;
 import com.inventory.orchestrator.dto.ImportResult;
+import com.inventory.orchestrator.dto.StockConsistencyValidationResult;
 import com.inventory.orchestrator.entity.*;
 import com.inventory.orchestrator.repository.*;
+import com.inventory.orchestrator.service.StockConsistencyValidationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,7 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +32,7 @@ public class DataImportService {
     private final CsvProcessingService csvProcessingService;
     private final ColumnMappingService columnMappingService;
     private final ObjectMapper objectMapper;
+    private final StockConsistencyValidationService stockConsistencyValidationService;
     
     @Autowired
     public DataImportService(StockRepository stockRepository,
@@ -38,7 +43,8 @@ public class DataImportService {
                             FileUploadRepository fileUploadRepository,
                             CsvProcessingService csvProcessingService,
                             ColumnMappingService columnMappingService,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            StockConsistencyValidationService stockConsistencyValidationService) {
         this.stockRepository = stockRepository;
         this.salesRepository = salesRepository;
         this.transferRepository = transferRepository;
@@ -48,6 +54,77 @@ public class DataImportService {
         this.csvProcessingService = csvProcessingService;
         this.columnMappingService = columnMappingService;
         this.objectMapper = objectMapper;
+        this.stockConsistencyValidationService = stockConsistencyValidationService;
+    }
+    
+    /**
+     * Import stock data from CSV with optional consistency validation
+     * @param salesFile Optional sales file for validation
+     * @param transferFile Optional transfer file for validation
+     * @param salesMappingConfig Optional mapping config for sales file
+     * @param transferMappingConfig Optional mapping config for transfer file
+     */
+    @Transactional
+    public ImportResult importStockDataWithValidation(
+            MultipartFile file, 
+            FileMappingConfigDTO mappingConfig,
+            MultipartFile salesFile,
+            MultipartFile transferFile,
+            FileMappingConfigDTO salesMappingConfig,
+            FileMappingConfigDTO transferMappingConfig) throws Exception {
+        
+        // If sales and transfer files are provided, validate consistency
+        if (salesFile != null && transferFile != null && 
+            salesMappingConfig != null && transferMappingConfig != null) {
+            
+            // Parse all three files
+            List<Map<String, String>> stockRows = csvProcessingService.processCsvFile(file);
+            List<Map<String, String>> salesRows = csvProcessingService.processCsvFile(salesFile);
+            List<Map<String, String>> transferRows = csvProcessingService.processCsvFile(transferFile);
+            
+            // Transform rows
+            Map<String, Integer> stockData = new HashMap<>();
+            for (Map<String, String> stockRow : stockRows) {
+                Map<String, Object> transformedRow = columnMappingService.transformRow(stockRow, mappingConfig);
+                Long idStore = getLongValue(transformedRow, "id_store");
+                Long idProduct = getLongValue(transformedRow, "id_product");
+                Integer quantity = getIntegerValue(transformedRow, "quantity");
+                
+                if (idStore != null && idProduct != null && quantity != null) {
+                    stockData.put(idStore + "-" + idProduct, quantity);
+                }
+            }
+            
+            List<Map<String, Object>> transformedSalesRows = new ArrayList<>();
+            for (Map<String, String> salesRow : salesRows) {
+                transformedSalesRows.add(columnMappingService.transformRow(salesRow, salesMappingConfig));
+            }
+            
+            List<Map<String, Object>> transformedTransferRows = new ArrayList<>();
+            for (Map<String, String> transferRow : transferRows) {
+                transformedTransferRows.add(columnMappingService.transformRow(transferRow, transferMappingConfig));
+            }
+            
+            // Validate consistency
+            StockConsistencyValidationResult validationResult = stockConsistencyValidationService
+                .validateStockConsistencyFromParsedData(stockData, transformedSalesRows, transformedTransferRows);
+            
+            if (!validationResult.getValid()) {
+                ImportResult errorResult = new ImportResult();
+                errorResult.setFileName(file.getOriginalFilename());
+                errorResult.setFileType(FileType.STOCK);
+                errorResult.setUploadedAt(LocalDateTime.now());
+                errorResult.setValid(false);
+                errorResult.setErrors(validationResult.getErrors());
+                errorResult.setRowsProcessed(0);
+                errorResult.setRowsInserted(0);
+                errorResult.setRowsFailed(0);
+                return errorResult;
+            }
+        }
+        
+        // Continue with normal import
+        return importStockData(file, mappingConfig);
     }
     
     /**
@@ -156,7 +233,7 @@ public class DataImportService {
                 Long idStore = getLongValue(transformedRow, "id_store");
                 Long idProduct = getLongValue(transformedRow, "id_product");
                 Integer quantity = getIntegerValue(transformedRow, "quantity");
-                LocalDate rangeDate = getDateValue(transformedRow, "range_date");
+                LocalDateTime rangeDate = getDateTimeValue(transformedRow, "range_date");
                 
                 if (idStore == null || idProduct == null || quantity == null || rangeDate == null) {
                     result.getErrors().add("Row " + rowNumber + ": Missing required fields");
@@ -213,6 +290,9 @@ public class DataImportService {
     
     /**
      * Import transfer data from CSV
+     * Supports updating existing transfers (by matching date, stores, product) or creating new ones
+     * When status changes from "approved" to "in_transit", reduces stock from sending store
+     * When creating new transfers with status "in_transit", reduces stock from sending store
      */
     @Transactional
     public ImportResult importTransferData(MultipartFile file, FileMappingConfigDTO mappingConfig) throws Exception {
@@ -238,12 +318,24 @@ public class DataImportService {
             try {
                 Map<String, Object> transformedRow = columnMappingService.transformRow(csvRow, mappingConfig);
                 
-                LocalDate date = getDateValue(transformedRow, "date");
+                LocalDateTime date = getDateTimeValue(transformedRow, "date");
                 Long idStoreSent = getLongValue(transformedRow, "id_store_sent");
                 Long idStoreReceive = getLongValue(transformedRow, "id_store_receive");
                 Long idProduct = getLongValue(transformedRow, "id_product");
                 String reason = getStringValue(transformedRow, "reason");
                 Integer quantity = getIntegerValue(transformedRow, "quantity");
+                String status = getStringValue(transformedRow, "status");
+                
+                // Status is optional, default to "in_transit"
+                if (status == null || status.trim().isEmpty()) {
+                    status = "in_transit";
+                } else {
+                    status = status.trim().toLowerCase();
+                    // Normalize status values
+                    if (status.equals("in progress") || status.equals("in_progress")) {
+                        status = "in_transit";
+                    }
+                }
                 
                 if (date == null || idStoreSent == null || idStoreReceive == null || 
                     idProduct == null || quantity == null) {
@@ -271,13 +363,51 @@ public class DataImportService {
                     continue;
                 }
                 
-                Transfer transfer = new Transfer();
-                transfer.setDate(date);
-                transfer.setIdStoreSent(idStoreSent);
-                transfer.setIdStoreReceive(idStoreReceive);
-                transfer.setIdProduct(idProduct);
-                transfer.setReason(reason);
-                transfer.setQuantity(quantity);
+                // Try to find existing transfer by date, stores, and product
+                Transfer existingTransfer = findExistingTransfer(date, idStoreSent, idStoreReceive, idProduct);
+                Transfer transfer;
+                String oldStatus = null;
+                
+                if (existingTransfer != null) {
+                    // Update existing transfer
+                    transfer = existingTransfer;
+                    oldStatus = transfer.getStatus();
+                    transfer.setReason(reason != null ? reason : transfer.getReason());
+                    transfer.setQuantity(quantity);
+                    transfer.setStatus(status);
+                } else {
+                    // Create new transfer
+                    transfer = new Transfer();
+                    transfer.setDate(date);
+                    transfer.setIdStoreSent(idStoreSent);
+                    transfer.setIdStoreReceive(idStoreReceive);
+                    transfer.setIdProduct(idProduct);
+                    transfer.setReason(reason);
+                    transfer.setQuantity(quantity);
+                    transfer.setStatus(status);
+                }
+                
+                // Handle stock changes based on transfer status
+                // Stock is reduced from sending store when status becomes "in_transit"
+                if ("in_transit".equals(status)) {
+                    if (existingTransfer == null || "approved".equals(oldStatus)) {
+                        // Reduce stock from sending store
+                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                    }
+                }
+                
+                // Stock is added to receiving store when status becomes "received"
+                if ("received".equals(status)) {
+                    if (existingTransfer == null) {
+                        // New transfer with "received" status - add to receiving store
+                        // (stock was never reduced from sending store since it never went to in_transit)
+                        addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    } else if ("in_transit".equals(oldStatus) || "approved".equals(oldStatus)) {
+                        // Transfer status changed to "received" - add stock to receiving store
+                        // Stock was already reduced from sending store when it went to "in_transit"
+                        addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    }
+                }
                 
                 transfersToSave.add(transfer);
                 
@@ -298,6 +428,71 @@ public class DataImportService {
         
         result.setFileUploadId(fileUpload.getId());
         return result;
+    }
+    
+    /**
+     * Find existing transfer by date, stores, and product
+     */
+    private Transfer findExistingTransfer(LocalDateTime date, Long idStoreSent, Long idStoreReceive, Long idProduct) {
+        // Find transfers on the same day (start of day to end of day)
+        LocalDateTime startOfDay = date.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = date.toLocalDate().atTime(23, 59, 59);
+        List<Transfer> transfers = transferRepository.findByDateBetween(startOfDay, endOfDay);
+        for (Transfer transfer : transfers) {
+            if (transfer.getIdStoreSent().equals(idStoreSent) &&
+                transfer.getIdStoreReceive().equals(idStoreReceive) &&
+                transfer.getIdProduct().equals(idProduct)) {
+                return transfer;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Reduce stock from sending store when transfer moves to in_transit
+     */
+    private void reduceStockForTransfer(Long idStoreSent, Long idProduct, Integer quantity, ImportResult result, int rowNumber) {
+        try {
+            Stock stock = stockRepository.findByIdStoreAndIdProduct(idStoreSent, idProduct);
+            if (stock == null) {
+                result.getErrors().add("Row " + rowNumber + ": No stock found for Store " + idStoreSent + ", Product " + idProduct);
+                return;
+            }
+            
+            int currentQuantity = stock.getQuantity();
+            if (currentQuantity < quantity) {
+                result.getErrors().add("Row " + rowNumber + ": Insufficient stock. Store " + idStoreSent + 
+                    ", Product " + idProduct + " has " + currentQuantity + " but transfer requires " + quantity);
+                return;
+            }
+            
+            stock.setQuantity(currentQuantity - quantity);
+            stockRepository.save(stock);
+        } catch (Exception e) {
+            result.getErrors().add("Row " + rowNumber + ": Error reducing stock: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Add stock to receiving store when transfer status becomes received
+     */
+    private void addStockForTransfer(Long idStoreReceive, Long idProduct, Integer quantity, ImportResult result, int rowNumber) {
+        try {
+            Stock stock = stockRepository.findByIdStoreAndIdProduct(idStoreReceive, idProduct);
+            if (stock == null) {
+                // Create new stock entry if it doesn't exist
+                stock = new Stock();
+                stock.setIdStore(idStoreReceive);
+                stock.setIdProduct(idProduct);
+                stock.setQuantity(quantity);
+            } else {
+                // Add to existing stock
+                stock.setQuantity(stock.getQuantity() + quantity);
+            }
+            stockRepository.save(stock);
+        } catch (Exception e) {
+            result.getErrors().add("Row " + rowNumber + ": Error adding stock: " + e.getMessage());
+        }
     }
     
     /**
@@ -576,11 +771,33 @@ public class DataImportService {
         Object value = row.get(key);
         if (value == null) return null;
         if (value instanceof LocalDate) return (LocalDate) value;
+        if (value instanceof LocalDateTime) return ((LocalDateTime) value).toLocalDate();
         if (value instanceof String) {
             try {
                 return LocalDate.parse((String) value);
             } catch (Exception e) {
                 return null;
+            }
+        }
+        return null;
+    }
+    
+    private LocalDateTime getDateTimeValue(Map<String, Object> row, String key) {
+        Object value = row.get(key);
+        if (value == null) return null;
+        if (value instanceof LocalDateTime) return (LocalDateTime) value;
+        if (value instanceof LocalDate) return ((LocalDate) value).atStartOfDay();
+        if (value instanceof String) {
+            try {
+                // Try parsing as ISO datetime first
+                return LocalDateTime.parse((String) value);
+            } catch (Exception e) {
+                try {
+                    // Try parsing as date and convert to start of day
+                    return LocalDate.parse((String) value).atStartOfDay();
+                } catch (Exception ex) {
+                    return null;
+                }
             }
         }
         return null;

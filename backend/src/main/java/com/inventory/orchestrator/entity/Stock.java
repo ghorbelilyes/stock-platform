@@ -20,6 +20,9 @@ public class Stock {
     @Column(nullable = false)
     private Integer quantity;
     
+    @Column(name = "suggestion_quantity")
+    private Integer suggestionQuantity;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_product", insertable = false, updatable = false)
     private Product product;
@@ -59,6 +62,14 @@ public class Stock {
     
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+    
+    public Integer getSuggestionQuantity() {
+        return suggestionQuantity;
+    }
+    
+    public void setSuggestionQuantity(Integer suggestionQuantity) {
+        this.suggestionQuantity = suggestionQuantity;
     }
     
     public Product getProduct() {

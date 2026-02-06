@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -19,13 +19,22 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
     
     List<Sales> findByIdProduct(Long idProduct);
     
-    List<Sales> findByRangeDateBetween(LocalDate startDate, LocalDate endDate);
+    List<Sales> findByRangeDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    
+    // Find existing sales by store, product, and date (same day)
+    @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.idProduct = :productId " +
+           "AND FUNCTION('DATE', s.rangeDate) = FUNCTION('DATE', :rangeDate)")
+    List<Sales> findByStoreProductAndDate(
+        @Param("storeId") Long storeId,
+        @Param("productId") Long productId,
+        @Param("rangeDate") LocalDateTime rangeDate
+    );
     
     @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate")
     Page<Sales> findByStoreAndDateRange(
         @Param("storeId") Long idStore,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         Pageable pageable
     );
 
@@ -74,7 +83,7 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
         "WHERE s.rangeDate BETWEEN :startDate AND :endDate",
         countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.rangeDate BETWEEN :startDate AND :endDate"
     )
-    Page<SalesView> findByRangeDateBetweenView(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
+    Page<SalesView> findByRangeDateBetweenView(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
@@ -88,8 +97,8 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
     )
     Page<SalesView> findByStoreAndDateRangeView(
         @Param("storeId") Long storeId,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         Pageable pageable
     );
 
@@ -102,7 +111,8 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
         "FROM Sales s JOIN s.store st JOIN s.product p " +
         "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
         "AND (:productId IS NULL OR s.idProduct = :productId) " +
-        "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR s.rangeDate BETWEEN :startDate AND :endDate) " +
+        "AND s.rangeDate >= :startDate " +
+        "AND s.rangeDate <= :endDate " +
         "AND (:search IS NULL OR " +
             "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
             "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -115,7 +125,8 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
         countQuery = "SELECT COUNT(s) FROM Sales s JOIN s.store st JOIN s.product p " +
             "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
             "AND (:productId IS NULL OR s.idProduct = :productId) " +
-            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR s.rangeDate BETWEEN :startDate AND :endDate) " +
+            "AND s.rangeDate >= :startDate " +
+            "AND s.rangeDate <= :endDate " +
             "AND (:search IS NULL OR " +
                 "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
                 "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -133,8 +144,8 @@ public interface SalesRepository extends JpaRepository<Sales, Long> {
         @Param("storeName") String storeName,
         @Param("productName") String productName,
         @Param("city") String city,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         Pageable pageable
     );
 }

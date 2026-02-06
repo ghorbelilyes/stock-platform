@@ -46,6 +46,7 @@ export class AppMenu implements OnInit, OnDestroy {
             'navigation.dashboard',
             'navigation.inventory',
             'navigation.uploadData',
+            'navigation.updateStock',
             'navigation.stores',
             'navigation.products',
             'navigation.categories',
@@ -74,6 +75,11 @@ export class AppMenu implements OnInit, OnDestroy {
                             label: translations['navigation.uploadData'],
                             icon: 'pi pi-fw pi-cloud-upload',
                             routerLink: ['/inventory/upload']
+                        },
+                        {
+                            label: translations['navigation.updateStock'],
+                            icon: 'pi pi-fw pi-refresh',
+                            routerLink: ['/inventory/update-stock']
                         },
                         {
                             label: translations['navigation.stores'],

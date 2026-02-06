@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -52,12 +53,17 @@ public class TransferController {
         Sort sortObj = parseSortParameter(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
         
+        // Convert LocalDate to LocalDateTime for query (start of day to end of day)
+        // Use sentinel values when null to ensure parameters are always typed
+        LocalDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay() : LocalDateTime.of(1900, 1, 1, 0, 0);
+        LocalDateTime endDateTime = (endDate != null) ? endDate.atTime(23, 59, 59) : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+        
         Page<TransferView> transfers = transferRepository.findTransfersWithFiltersView(
             storeSent,
             storeReceive,
             productId,
-            startDate,
-            endDate,
+            startDateTime,
+            endDateTime,
             normalize(search),
             pageable
         );

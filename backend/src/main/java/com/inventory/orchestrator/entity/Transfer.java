@@ -2,7 +2,7 @@ package com.inventory.orchestrator.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transfer")
@@ -14,7 +14,7 @@ public class Transfer {
     private Long id;
     
     @Column(nullable = false)
-    private LocalDate date;
+    private LocalDateTime date;
     
     @Column(name = "id_store_sent", nullable = false)
     private Long idStoreSent;
@@ -52,11 +52,11 @@ public class Transfer {
     public Transfer() {
     }
     
-    public Transfer(LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity) {
+    public Transfer(LocalDateTime date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity) {
         this(date, idStoreSent, idStoreReceive, idProduct, reason, quantity, "in_transit");
     }
     
-    public Transfer(LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity, String status) {
+    public Transfer(LocalDateTime date, Long idStoreSent, Long idStoreReceive, Long idProduct, String reason, Integer quantity, String status) {
         this.date = date;
         this.idStoreSent = idStoreSent;
         this.idStoreReceive = idStoreReceive;
@@ -74,11 +74,11 @@ public class Transfer {
         this.id = id;
     }
     
-    public LocalDate getDate() {
+    public LocalDateTime getDate() {
         return date;
     }
     
-    public void setDate(LocalDate date) {
+    public void setDate(LocalDateTime date) {
         this.date = date;
     }
     

@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -21,7 +21,17 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     
     List<Transfer> findByIdProduct(Long idProduct);
     
-    List<Transfer> findByDateBetween(LocalDate startDate, LocalDate endDate);
+    List<Transfer> findByDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    
+    // Find existing transfers by date, stores, and product (same day)
+    @Query("SELECT t FROM Transfer t WHERE t.idStoreSent = :storeSent AND t.idStoreReceive = :storeReceive " +
+           "AND t.idProduct = :productId AND FUNCTION('DATE', t.date) = FUNCTION('DATE', :date)")
+    List<Transfer> findByStoresProductAndDate(
+        @Param("storeSent") Long idStoreSent,
+        @Param("storeReceive") Long idStoreReceive,
+        @Param("productId") Long idProduct,
+        @Param("date") LocalDateTime date
+    );
     
     @Query("SELECT t FROM Transfer t WHERE t.idStoreSent = :storeSent OR t.idStoreReceive = :storeReceive")
     List<Transfer> findByStoreInvolved(@Param("storeSent") Long idStoreSent, @Param("storeReceive") Long idStoreReceive);
@@ -31,7 +41,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "WHERE (:storeSent IS NULL OR t.idStoreSent = :storeSent) " +
             "AND (:storeReceive IS NULL OR t.idStoreReceive = :storeReceive) " +
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
-            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR t.date BETWEEN :startDate AND :endDate) " +
+            "AND t.date >= :startDate " +
+            "AND t.date <= :endDate " +
             "AND (:search IS NULL OR " +
                 "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
                 "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -43,7 +54,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "WHERE (:storeSent IS NULL OR t.idStoreSent = :storeSent) " +
             "AND (:storeReceive IS NULL OR t.idStoreReceive = :storeReceive) " +
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
-            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR t.date BETWEEN :startDate AND :endDate) " +
+            "AND t.date >= :startDate " +
+            "AND t.date <= :endDate " +
             "AND (:search IS NULL OR " +
                 "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
                 "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -56,8 +68,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
         @Param("storeSent") Long storeSent,
         @Param("storeReceive") Long storeReceive,
         @Param("productId") Long productId,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         @Param("search") String search,
         Pageable pageable
     );
@@ -73,7 +85,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "WHERE (:storeSent IS NULL OR t.idStoreSent = :storeSent) " +
             "AND (:storeReceive IS NULL OR t.idStoreReceive = :storeReceive) " +
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
-            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR t.date BETWEEN :startDate AND :endDate) " +
+            "AND t.date >= :startDate " +
+            "AND t.date <= :endDate " +
             "AND (:search IS NULL OR " +
             "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
             "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -91,7 +104,8 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "WHERE (:storeSent IS NULL OR t.idStoreSent = :storeSent) " +
             "AND (:storeReceive IS NULL OR t.idStoreReceive = :storeReceive) " +
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
-            "AND (CAST(:startDate AS date) IS NULL OR CAST(:endDate AS date) IS NULL OR t.date BETWEEN :startDate AND :endDate) " +
+            "AND t.date >= :startDate " +
+            "AND t.date <= :endDate " +
             "AND (:search IS NULL OR " +
             "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
             "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -107,17 +121,21 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
         @Param("storeSent") Long storeSent,
         @Param("storeReceive") Long storeReceive,
         @Param("productId") Long productId,
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
         @Param("search") String search,
         Pageable pageable
     );
 
-    /** Sum quantities of in-transit (and approved/picked) transfers by destination store and product. Returns [storeId, productId, sum]. */
-    @Query("SELECT t.idStoreReceive, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status IN ('in_transit', 'approved', 'picked') GROUP BY t.idStoreReceive, t.idProduct")
+    /** Sum quantities of in-transit transfers by destination store and product. Returns [storeId, productId, sum]. */
+    @Query("SELECT t.idStoreReceive, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status = 'in_transit' GROUP BY t.idStoreReceive, t.idProduct")
     List<Object[]> sumIncomingByStoreAndProduct();
 
-    /** Sum quantities of in-transit (and approved/picked) transfers by source store and product. Returns [storeId, productId, sum]. */
-    @Query("SELECT t.idStoreSent, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status IN ('in_transit', 'approved', 'picked') GROUP BY t.idStoreSent, t.idProduct")
-    List<Object[]> sumOutgoingByStoreAndProduct();
+    /** Sum quantities of in-transit transfers by source store and product. Returns [storeId, productId, sum]. */
+    @Query("SELECT t.idStoreSent, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status = 'in_transit' GROUP BY t.idStoreSent, t.idProduct")
+    List<Object[]> sumOutgoingInTransitByStoreAndProduct();
+    
+    /** Sum quantities of approved transfers by source store and product. Returns [storeId, productId, sum]. */
+    @Query("SELECT t.idStoreSent, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status = 'approved' GROUP BY t.idStoreSent, t.idProduct")
+    List<Object[]> sumOutgoingApprovedByStoreAndProduct();
 }

@@ -1,6 +1,6 @@
 package com.inventory.orchestrator.dto;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * DTO for transfer list API: transfer data with source/destination store names and product name.
@@ -8,7 +8,7 @@ import java.time.LocalDate;
 public class TransferView {
 
     private Long id;
-    private LocalDate date;
+    private LocalDateTime date;
     private Long idStoreSent;
     private Long idStoreReceive;
     private Long idProduct;
@@ -19,7 +19,7 @@ public class TransferView {
     private String destinationStoreName;
     private String productName;
 
-    public TransferView(Long id, LocalDate date, Long idStoreSent, Long idStoreReceive, Long idProduct,
+    public TransferView(Long id, LocalDateTime date, Long idStoreSent, Long idStoreReceive, Long idProduct,
                         String reason, Integer quantity, String status,
                         String sourceStoreName, String destinationStoreName, String productName) {
         this.id = id;
@@ -37,8 +37,8 @@ public class TransferView {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
+    public LocalDateTime getDate() { return date; }
+    public void setDate(LocalDateTime date) { this.date = date; }
     public Long getIdStoreSent() { return idStoreSent; }
     public void setIdStoreSent(Long idStoreSent) { this.idStoreSent = idStoreSent; }
     public Long getIdStoreReceive() { return idStoreReceive; }

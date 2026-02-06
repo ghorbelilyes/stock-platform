@@ -15,11 +15,13 @@ interface StockData {
     idStore: number;
     idProduct: number;
     quantity: number;
-    /** Quantity arriving at this store for this product (transfers in_transit to this store) */
+    /** Quantity arriving at this store for this product (transfers in_transit to this store) - Incoming (en route) */
     incomingQty: number;
-    /** Quantity leaving this store for this product (transfers in_transit from this store) */
-    outgoingQty: number;
-    /** quantity + incomingQty - outgoingQty */
+    /** Quantity leaving this store for this product (transfers in_transit from this store) - Out to transit (en route) */
+    outToTransit: number;
+    /** Quantity approved for transfer but not yet in_transit - Quantity for transfer */
+    quantityForTransfer: number;
+    /** quantity + incomingQty - outToTransit (approved transfers not yet deducted) */
     virtualQuantity: number;
     store?: {
         id: number;
@@ -129,7 +131,8 @@ interface StockData {
                                     </div>
                                 </th>
                                 <th>{{ 'stock.incoming' | translate }}</th>
-                                <th>{{ 'stock.outgoing' | translate }}</th>
+                                <th>{{ 'stock.outToTransit' | translate }}</th>
+                                <th>{{ 'stock.quantityForTransfer' | translate }}</th>
                                 <th [pSortableColumn]="'virtualQuantity'">
                                     <div class="flex items-center gap-2">
                                         <span>{{ 'stock.virtualQuantity' | translate }}</span>
@@ -141,7 +144,7 @@ interface StockData {
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="9" class="text-center py-8 text-muted-color">
+                                <td colspan="11" class="text-center py-8 text-muted-color">
                                     <div *ngIf="!loading">
                                         <p class="mb-2">{{ 'common.noData' | translate }}</p>
                                     </div>
@@ -162,8 +165,12 @@ interface StockData {
                                     <span *ngIf="stock.incomingQty === 0" class="text-muted-color">0</span>
                                 </td>
                                 <td>
-                                    <span *ngIf="stock.outgoingQty > 0" class="font-medium text-orange-500">-{{ stock.outgoingQty }}</span>
-                                    <span *ngIf="stock.outgoingQty === 0" class="text-muted-color">0</span>
+                                    <span *ngIf="stock.outToTransit > 0" class="font-medium text-orange-500">-{{ stock.outToTransit }}</span>
+                                    <span *ngIf="stock.outToTransit === 0" class="text-muted-color">0</span>
+                                </td>
+                                <td>
+                                    <span *ngIf="stock.quantityForTransfer > 0" class="font-medium text-yellow-600 dark:text-yellow-400">{{ stock.quantityForTransfer }}</span>
+                                    <span *ngIf="stock.quantityForTransfer === 0" class="text-muted-color">0</span>
                                 </td>
                                 <td>
                                     <span [class.font-semibold]="stock.virtualQuantity !== stock.quantity">{{ stock.virtualQuantity }}</span>
@@ -208,18 +215,22 @@ export class StockComponent implements OnInit {
         this.viewModeOptions[1].label = this.translateService.instant('stock.viewByProduct');
     }
 
-    /** Map API stock row (with incomingQty, outgoingQty) to StockData and compute virtualQuantity */
+    /** Map API stock row (with incomingQty, outToTransit, quantityForTransfer) to StockData and compute virtualQuantity */
     private mapStockRow(row: any): StockData {
         const quantity = row.quantity ?? 0;
         const incomingQty = row.incomingQty ?? 0;
-        const outgoingQty = row.outgoingQty ?? 0;
+        const outToTransit = row.outToTransit ?? 0;
+        const quantityForTransfer = row.quantityForTransfer ?? 0;
+        // Virtual quantity = on hand + incoming - out to transit - quantity for transfer
+        // Approved transfers reduce virtual quantity because they're committed to be sent
         return {
             idStore: row.idStore ?? row.store?.id,
             idProduct: row.idProduct ?? row.product?.id,
             quantity,
             incomingQty,
-            outgoingQty,
-            virtualQuantity: quantity + incomingQty - outgoingQty,
+            outToTransit,
+            quantityForTransfer,
+            virtualQuantity: quantity + incomingQty - outToTransit - quantityForTransfer,
             store: row.store,
             product: row.product
         };

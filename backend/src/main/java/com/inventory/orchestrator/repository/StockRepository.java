@@ -24,7 +24,7 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
-            "s.idStore, s.idProduct, s.quantity, " +
+            "s.idStore, s.idProduct, s.quantity, s.suggestionQuantity, " +
             "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
             "p.id, p.codeBarre, p.name, p.description" +
         ") " +
@@ -35,7 +35,7 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
-            "s.idStore, s.idProduct, s.quantity, " +
+            "s.idStore, s.idProduct, s.quantity, s.suggestionQuantity, " +
             "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
             "p.id, p.codeBarre, p.name, p.description" +
         ") " +
@@ -47,7 +47,7 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
-            "s.idStore, s.idProduct, s.quantity, " +
+            "s.idStore, s.idProduct, s.quantity, s.suggestionQuantity, " +
             "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
             "p.id, p.codeBarre, p.name, p.description" +
         ") " +
@@ -59,7 +59,7 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
-            "s.idStore, s.idProduct, s.quantity, " +
+            "s.idStore, s.idProduct, s.quantity, s.suggestionQuantity, " +
             "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
             "p.id, p.codeBarre, p.name, p.description" +
         ") " +
@@ -71,7 +71,7 @@ public interface StockRepository extends JpaRepository<Stock, StockId> {
 
     @Query(
         value = "SELECT new com.inventory.orchestrator.dto.StockView(" +
-            "s.idStore, s.idProduct, s.quantity, " +
+            "s.idStore, s.idProduct, s.quantity, s.suggestionQuantity, " +
             "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
             "p.id, p.codeBarre, p.name, p.description" +
         ") " +

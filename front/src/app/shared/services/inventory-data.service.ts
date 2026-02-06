@@ -45,6 +45,21 @@ interface ImportResult {
     errors: string[];
 }
 
+interface StockConsistencyValidationResult {
+    valid: boolean;
+    errors: string[];
+    message?: string;
+    newSalesRecords?: number;
+    updateSalesRecords?: number;
+    newTransferRecords?: number;
+    updateTransferRecords?: number;
+    updateStockRecords?: number;
+    newSalesDetails?: string[];
+    updateSalesDetails?: string[];
+    newTransferDetails?: string[];
+    updateTransferDetails?: string[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -532,6 +547,92 @@ export class InventoryDataService {
             catchError(error => {
                 console.error('Error uploading file:', error);
                 return throwError(() => error);
+            })
+        );
+    }
+
+    // Validate stock consistency with sales and transfers
+    validateStockConsistency(
+        stockFile: File,
+        salesFile: File,
+        transferFile: File,
+        stockMapping: FileMappingConfig,
+        salesMapping: FileMappingConfig,
+        transferMapping: FileMappingConfig
+    ): Observable<StockConsistencyValidationResult> {
+        const formData = new FormData();
+        formData.append('stockFile', stockFile);
+        formData.append('salesFile', salesFile);
+        formData.append('transferFile', transferFile);
+        
+        // Convert fileType in columnMapping to uppercase for backend enum
+        const stockMappingForBackend = {
+            ...stockMapping,
+            fileType: stockMapping.fileType.toUpperCase()
+        };
+        const salesMappingForBackend = {
+            ...salesMapping,
+            fileType: salesMapping.fileType.toUpperCase()
+        };
+        const transferMappingForBackend = {
+            ...transferMapping,
+            fileType: transferMapping.fileType.toUpperCase()
+        };
+        
+        formData.append('stockMapping', JSON.stringify(stockMappingForBackend));
+        formData.append('salesMapping', JSON.stringify(salesMappingForBackend));
+        formData.append('transferMapping', JSON.stringify(transferMappingForBackend));
+
+        return this.http.post<ApiResponse<StockConsistencyValidationResult>>(
+            `${this.apiUrl}${API_CONFIG.endpoints.validateStockConsistency}`,
+            formData
+        ).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data;
+                }
+                return { 
+                    valid: false, 
+                    errors: [response.error?.message || 'Validation failed'],
+                    message: 'Validation failed'
+                };
+            }),
+            catchError(error => {
+                console.error('Error validating stock consistency:', error);
+                return throwError(() => ({
+                    valid: false,
+                    errors: [error.error?.error?.message || 'Validation error occurred'],
+                    message: 'Validation error occurred'
+                }));
+            })
+        );
+    }
+
+    // Check consistency of current database data
+    checkDatabaseConsistency(date?: string): Observable<StockConsistencyValidationResult> {
+        let url = `${this.apiUrl}${API_CONFIG.endpoints.checkDatabaseConsistency}`;
+        if (date) {
+            url += `?date=${date}`;
+        }
+
+        return this.http.get<ApiResponse<StockConsistencyValidationResult>>(url).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data;
+                }
+                return { 
+                    valid: false, 
+                    errors: [response.error?.message || 'Check failed'],
+                    message: 'Database consistency check failed'
+                };
+            }),
+            catchError(error => {
+                console.error('Error checking database consistency:', error);
+                return throwError(() => ({
+                    valid: false,
+                    errors: [error.error?.error?.message || 'Check error occurred'],
+                    message: 'Database consistency check error occurred'
+                }));
             })
         );
     }

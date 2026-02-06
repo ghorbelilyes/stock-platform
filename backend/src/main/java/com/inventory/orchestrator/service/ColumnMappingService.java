@@ -14,7 +14,7 @@ public class ColumnMappingService {
     private static final Map<FileType, List<String>> REQUIRED_COLUMNS = Map.of(
         FileType.STOCK, Arrays.asList("id_store", "id_product", "quantity"),
         FileType.SALES, Arrays.asList("id_store", "id_product", "quantity", "range_date"),
-        FileType.TRANSFER, Arrays.asList("date", "id_store_sent", "id_store_receive", "id_product", "reason", "quantity"),
+        FileType.TRANSFER, Arrays.asList("date", "id_store_sent", "id_store_receive", "id_product", "reason", "quantity", "status"),
         FileType.STORE, Arrays.asList("id", "serial_number", "name", "city", "type"),
         FileType.PRODUCT, Arrays.asList("id", "code_barre", "name", "description")
     );
@@ -59,17 +59,22 @@ public class ColumnMappingService {
     private Object transformValue(String value, String backendColumn) {
         value = value.trim();
         
-        // Handle date columns
+        // Handle date/timestamp columns
         if (backendColumn.equals("date") || backendColumn.equals("range_date")) {
             try {
-                // Try ISO date format first
-                return java.time.LocalDate.parse(value);
+                // Try ISO datetime format first (with time)
+                return java.time.LocalDateTime.parse(value);
             } catch (Exception e) {
                 try {
-                    // Try other common formats
-                    return java.time.LocalDate.parse(value, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    // Try ISO date format and convert to start of day
+                    return java.time.LocalDate.parse(value).atStartOfDay();
                 } catch (Exception ex) {
-                    return value; // Return as string if parsing fails
+                    try {
+                        // Try other common date formats
+                        return java.time.LocalDate.parse(value, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+                    } catch (Exception exc) {
+                        return value; // Return as string if parsing fails
+                    }
                 }
             }
         }

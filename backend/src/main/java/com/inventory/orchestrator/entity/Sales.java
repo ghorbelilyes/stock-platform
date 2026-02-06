@@ -2,7 +2,7 @@ package com.inventory.orchestrator.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sales")
@@ -14,7 +14,7 @@ public class Sales {
     private Long id;
     
     @Column(name = "range_date", nullable = false)
-    private LocalDate rangeDate;
+    private LocalDateTime rangeDate;
     
     @Column(name = "id_store", nullable = false)
     private Long idStore;
@@ -36,7 +36,7 @@ public class Sales {
     public Sales() {
     }
     
-    public Sales(LocalDate rangeDate, Long idStore, Long idProduct, Integer quantity) {
+    public Sales(LocalDateTime rangeDate, Long idStore, Long idProduct, Integer quantity) {
         this.rangeDate = rangeDate;
         this.idStore = idStore;
         this.idProduct = idProduct;
@@ -51,11 +51,11 @@ public class Sales {
         this.id = id;
     }
     
-    public LocalDate getRangeDate() {
+    public LocalDateTime getRangeDate() {
         return rangeDate;
     }
     
-    public void setRangeDate(LocalDate rangeDate) {
+    public void setRangeDate(LocalDateTime rangeDate) {
         this.rangeDate = rangeDate;
     }
     

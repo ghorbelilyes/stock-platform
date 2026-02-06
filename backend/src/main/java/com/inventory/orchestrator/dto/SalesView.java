@@ -1,10 +1,10 @@
 package com.inventory.orchestrator.dto;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class SalesView {
     private Long id;
-    private LocalDate rangeDate;
+    private LocalDateTime rangeDate;
     private Long idStore;
     private Long idProduct;
     private Integer quantity;
@@ -13,7 +13,7 @@ public class SalesView {
 
     public SalesView(
             Long id,
-            LocalDate rangeDate,
+            LocalDateTime rangeDate,
             Long idStore,
             Long idProduct,
             Integer quantity,
@@ -41,7 +41,7 @@ public class SalesView {
         return id;
     }
 
-    public LocalDate getRangeDate() {
+    public LocalDateTime getRangeDate() {
         return rangeDate;
     }
 

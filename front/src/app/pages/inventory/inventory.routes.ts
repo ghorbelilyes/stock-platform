@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 export default [
     { path: '', redirectTo: 'upload', pathMatch: 'full' },
     { path: 'upload', loadComponent: () => import('./upload/upload.component').then(m => m.UploadComponent) },
+    { path: 'update-stock', loadComponent: () => import('./update-stock/update-stock.component').then(m => m.UpdateStockComponent) },
     { path: 'stock', loadComponent: () => import('./stock/stock.component').then(m => m.StockComponent) },
     { path: 'sales', loadComponent: () => import('./sales/sales.component').then(m => m.SalesComponent) },
     { path: 'transfers', loadComponent: () => import('./transfers/transfers.component').then(m => m.TransfersComponent) },

@@ -1,0 +1,4 @@
+date,id_product,id_store_receive,id_store_sent,quantity,reason,status
+2025-01-13 09:00:00,1002,100,200,15,Initial restock,received
+2025-01-14 08:00:00,1001,100,200,20,Initial restock,received
+2025-01-15 08:00:00,1001,100,200,25,Restock,in_transit

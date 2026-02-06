@@ -57,11 +57,13 @@ public class StockService {
     private void enrichWithTransfers(List<StockView> content) {
         if (content == null || content.isEmpty()) return;
         Map<String, Integer> incoming = buildIncomingMap();
-        Map<String, Integer> outgoing = buildOutgoingMap();
+        Map<String, Integer> outToTransit = buildOutToTransitMap();
+        Map<String, Integer> quantityForTransfer = buildQuantityForTransferMap();
         for (StockView row : content) {
             String k = key(row.getIdStore(), row.getIdProduct());
             row.setIncomingQty(incoming.getOrDefault(k, 0));
-            row.setOutgoingQty(outgoing.getOrDefault(k, 0));
+            row.setOutToTransit(outToTransit.getOrDefault(k, 0));
+            row.setQuantityForTransfer(quantityForTransfer.getOrDefault(k, 0));
         }
     }
 
@@ -85,10 +87,26 @@ public class StockService {
         return map;
     }
 
-    private Map<String, Integer> buildOutgoingMap() {
+    private Map<String, Integer> buildOutToTransitMap() {
         Map<String, Integer> map = new HashMap<>();
         try {
-            List<Object[]> rows = transferRepository.sumOutgoingByStoreAndProduct();
+            List<Object[]> rows = transferRepository.sumOutgoingInTransitByStoreAndProduct();
+            for (Object[] row : rows) {
+                Long storeId = ((Number) row[0]).longValue();
+                Long productId = ((Number) row[1]).longValue();
+                Number sum = (Number) row[2];
+                map.put(key(storeId, productId), sum != null ? sum.intValue() : 0);
+            }
+        } catch (Exception e) {
+            // If status column or table not ready, return empty map
+        }
+        return map;
+    }
+    
+    private Map<String, Integer> buildQuantityForTransferMap() {
+        Map<String, Integer> map = new HashMap<>();
+        try {
+            List<Object[]> rows = transferRepository.sumOutgoingApprovedByStoreAndProduct();
             for (Object[] row : rows) {
                 Long storeId = ((Number) row[0]).longValue();
                 Long productId = ((Number) row[1]).longValue();

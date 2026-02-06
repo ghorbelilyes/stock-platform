@@ -303,14 +303,16 @@ export class TransfersComponent implements OnInit {
         });
     }
 
-    getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' {
+    getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' | 'overstock' {
         if (status === 'received' || status === 'closed') return 'ok';
-        if (status === 'approved' || status === 'picked' || status === 'in_transit') return 'medium';
+        if (status === 'approved') return 'overstock'; // Blue color for approved
+        if (status === 'picked' || status === 'in_transit') return 'medium';
         return 'low-priority';
     }
 
     getTransferStatusLabel(status: string): string {
-        if (status === 'in_transit' || status === 'approved' || status === 'picked') return 'transfers.statusInProgress';
+        if (status === 'in_transit' || status === 'picked') return 'transfers.statusInProgress';
+        if (status === 'approved') return 'transfers.statusApproved';
         if (status === 'received') return 'transfers.statusReceived';
         if (status === 'closed') return 'transfers.statusClosed';
         return 'transfers.statusProposed';
