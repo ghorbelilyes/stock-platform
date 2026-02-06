@@ -140,8 +140,11 @@ public class StockConsistencyValidationService {
                     // Calculate net effect based on status change
                     if (isNewTransfer) {
                         // NEW transfer - count based on new status
+                        // approved: no stock change
+                        // in_transit: reduce from sending store
+                        // received/closed: reduce from sending store AND add to receiving store
                         if ("received".equals(newStatus) || "closed".equals(newStatus)) {
-                            // New received transfer
+                            // New received/closed transfer: both stores affected
                             String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
                             netTransfersReceivedByStoreProduct.put(receiveKey,
                                 netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) + transfer.getQuantity());
@@ -152,45 +155,31 @@ public class StockConsistencyValidationService {
                             logger.debug("New received transfer: {}->{}, Product {}, Qty {}", 
                                 transfer.getIdStoreSent(), transfer.getIdStoreReceive(), transfer.getIdProduct(), transfer.getQuantity());
                         } else if ("in_transit".equals(newStatus)) {
-                            // New in_transit transfer
+                            // New in_transit transfer: reduce from sending store only
                             String sentKey = transfer.getIdStoreSent() + "-" + transfer.getIdProduct();
                             netTransfersSentByStoreProduct.put(sentKey,
                                 netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) + transfer.getQuantity());
                             logger.debug("New in_transit transfer: {}->{}, Product {}, Qty {}", 
                                 transfer.getIdStoreSent(), transfer.getIdStoreReceive(), transfer.getIdProduct(), transfer.getQuantity());
                         }
+                        // approved: no action (no stock change)
                     } else if (isStatusChange) {
                         // STATUS CHANGED - calculate net effect of the change
                         // Only count the DIFFERENCE between old and new status
-                        // Don't remove old status effect if it was already applied in DB
+                        // The old status effect was already applied in DB, so we only account for the change
                         
                         logger.debug("Status change detected: {} -> {}", oldStatus, newStatus);
                         
-                        // Calculate net effect based on status transition
-                        if ("in_transit".equals(oldStatus) && ("received".equals(newStatus) || "closed".equals(newStatus))) {
-                            // in_transit -> received: Stock was already reduced from sending store,
-                            // now we just add to receiving store (no change to sending store)
-                            String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
-                            netTransfersReceivedByStoreProduct.put(receiveKey,
-                                netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) + transfer.getQuantity());
-                            logger.debug("Status change in_transit->received: Adding {} to receiving store {}", 
-                                transfer.getQuantity(), receiveKey);
-                        } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && "in_transit".equals(newStatus)) {
-                            // received -> in_transit: Remove from receiving store, but sending store was already reduced
-                            String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
-                            netTransfersReceivedByStoreProduct.put(receiveKey,
-                                netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) - transfer.getQuantity());
-                            logger.debug("Status change received->in_transit: Removing {} from receiving store {}", 
-                                transfer.getQuantity(), receiveKey);
-                        } else if ("approved".equals(oldStatus) && "in_transit".equals(newStatus)) {
+                        // Handle specific status transitions
+                        if ("approved".equals(oldStatus) && "in_transit".equals(newStatus)) {
                             // approved -> in_transit: Reduce from sending store (new effect)
                             String sentKey = transfer.getIdStoreSent() + "-" + transfer.getIdProduct();
                             netTransfersSentByStoreProduct.put(sentKey,
                                 netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) + transfer.getQuantity());
-                            logger.debug("Status change approved->in_transit: Adding {} to sent for store {}", 
+                            logger.debug("Status change approved->in_transit: Reducing {} from sending store {}", 
                                 transfer.getQuantity(), sentKey);
                         } else if ("approved".equals(oldStatus) && ("received".equals(newStatus) || "closed".equals(newStatus))) {
-                            // approved -> received: Both sending and receiving stores affected (new effect)
+                            // approved -> received/closed: Reduce from sending store AND add to receiving store (new effect)
                             String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
                             netTransfersReceivedByStoreProduct.put(receiveKey,
                                 netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) + transfer.getQuantity());
@@ -198,10 +187,43 @@ public class StockConsistencyValidationService {
                             String sentKey = transfer.getIdStoreSent() + "-" + transfer.getIdProduct();
                             netTransfersSentByStoreProduct.put(sentKey,
                                 netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) + transfer.getQuantity());
-                            logger.debug("Status change approved->received: Adding {} to both stores", transfer.getQuantity());
+                            logger.debug("Status change approved->received: Reducing {} from sending store {} and adding to receiving store {}", 
+                                transfer.getQuantity(), sentKey, receiveKey);
+                        } else if ("in_transit".equals(oldStatus) && ("received".equals(newStatus) || "closed".equals(newStatus))) {
+                            // in_transit -> received/closed: Stock was already reduced from sending store,
+                            // now we just add to receiving store (no change to sending store)
+                            String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
+                            netTransfersReceivedByStoreProduct.put(receiveKey,
+                                netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) + transfer.getQuantity());
+                            logger.debug("Status change in_transit->received: Adding {} to receiving store {} (sending store already reduced)", 
+                                transfer.getQuantity(), receiveKey);
+                        } else if ("in_transit".equals(oldStatus) && "approved".equals(newStatus)) {
+                            // in_transit -> approved: Remove the reduction from sending store (revert effect)
+                            String sentKey = transfer.getIdStoreSent() + "-" + transfer.getIdProduct();
+                            netTransfersSentByStoreProduct.put(sentKey,
+                                netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) - transfer.getQuantity());
+                            logger.debug("Status change in_transit->approved: Reverting {} reduction from sending store {}", 
+                                transfer.getQuantity(), sentKey);
+                        } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && "in_transit".equals(newStatus)) {
+                            // received/closed -> in_transit: Remove from receiving store (sending store was already reduced)
+                            String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
+                            netTransfersReceivedByStoreProduct.put(receiveKey,
+                                netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) - transfer.getQuantity());
+                            logger.debug("Status change received->in_transit: Removing {} from receiving store {}", 
+                                transfer.getQuantity(), receiveKey);
+                        } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && "approved".equals(newStatus)) {
+                            // received/closed -> approved: Revert both effects
+                            String receiveKey = transfer.getIdStoreReceive() + "-" + transfer.getIdProduct();
+                            netTransfersReceivedByStoreProduct.put(receiveKey,
+                                netTransfersReceivedByStoreProduct.getOrDefault(receiveKey, 0) - transfer.getQuantity());
+                            
+                            String sentKey = transfer.getIdStoreSent() + "-" + transfer.getIdProduct();
+                            netTransfersSentByStoreProduct.put(sentKey,
+                                netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) - transfer.getQuantity());
+                            logger.debug("Status change received->approved: Reverting both effects");
                         } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && ("received".equals(newStatus) || "closed".equals(newStatus))) {
-                            // received -> received (quantity or other field change): No net effect, already counted
-                            logger.debug("Status change received->received: No net effect");
+                            // received -> received or closed -> closed (quantity or other field change): No net effect, already counted
+                            logger.debug("Status change {0}->{1}: No net effect", oldStatus, newStatus);
                         } else {
                             // Other status changes: Remove old effect, add new effect
                             logger.warn("Unhandled status change: {} -> {}", oldStatus, newStatus);
@@ -235,6 +257,7 @@ public class StockConsistencyValidationService {
                                 netTransfersSentByStoreProduct.put(sentKey,
                                     netTransfersSentByStoreProduct.getOrDefault(sentKey, 0) + transfer.getQuantity());
                             }
+                            // approved: no action
                         }
                     }
                 } else {

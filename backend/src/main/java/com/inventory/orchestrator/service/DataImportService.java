@@ -388,25 +388,47 @@ public class DataImportService {
                 }
                 
                 // Handle stock changes based on transfer status
-                // Stock is reduced from sending store when status becomes "in_transit"
-                if ("in_transit".equals(status)) {
-                    if (existingTransfer == null || "approved".equals(oldStatus)) {
-                        // Reduce stock from sending store
-                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
-                    }
-                }
+                // Rules:
+                // - approved: no stock change
+                // - approved -> in_transit: reduce from sending store
+                // - in_transit -> received: add to receiving store (sending store already reduced)
+                // - approved -> received: reduce from sending store AND add to receiving store
                 
-                // Stock is added to receiving store when status becomes "received"
-                if ("received".equals(status)) {
-                    if (existingTransfer == null) {
-                        // New transfer with "received" status - add to receiving store
-                        // (stock was never reduced from sending store since it never went to in_transit)
-                        addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
-                    } else if ("in_transit".equals(oldStatus) || "approved".equals(oldStatus)) {
-                        // Transfer status changed to "received" - add stock to receiving store
-                        // Stock was already reduced from sending store when it went to "in_transit"
+                if (existingTransfer == null) {
+                    // NEW transfer
+                    if ("in_transit".equals(status)) {
+                        // New transfer with "in_transit" status - reduce from sending store
+                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                    } else if ("received".equals(status) || "closed".equals(status)) {
+                        // New transfer with "received"/"closed" status - reduce from sending store AND add to receiving store
+                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
                         addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
                     }
+                    // approved: no stock change
+                } else {
+                    // EXISTING transfer - handle status changes
+                    if ("approved".equals(oldStatus) && "in_transit".equals(status)) {
+                        // approved -> in_transit: reduce from sending store
+                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                    } else if ("approved".equals(oldStatus) && ("received".equals(status) || "closed".equals(status))) {
+                        // approved -> received/closed: reduce from sending store AND add to receiving store
+                        reduceStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                        addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    } else if ("in_transit".equals(oldStatus) && ("received".equals(status) || "closed".equals(status))) {
+                        // in_transit -> received/closed: add to receiving store (sending store already reduced)
+                        addStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    } else if ("in_transit".equals(oldStatus) && "approved".equals(status)) {
+                        // in_transit -> approved: revert the reduction from sending store
+                        addStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                    } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && "in_transit".equals(status)) {
+                        // received/closed -> in_transit: remove from receiving store (sending store was already reduced)
+                        reduceStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    } else if (("received".equals(oldStatus) || "closed".equals(oldStatus)) && "approved".equals(status)) {
+                        // received/closed -> approved: revert both effects
+                        addStockForTransfer(idStoreSent, idProduct, quantity, result, rowNumber);
+                        reduceStockForTransfer(idStoreReceive, idProduct, quantity, result, rowNumber);
+                    }
+                    // Other status changes (e.g., approved -> approved, received -> received): no stock change
                 }
                 
                 transfersToSave.add(transfer);
