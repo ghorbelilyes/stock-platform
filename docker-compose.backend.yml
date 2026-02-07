@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: store
     ports:
-      - "5433:5432"  # Use 5433 on host to avoid conflict with local PostgreSQL
+      - "5439:5432"  # Use 5439 on host to avoid conflict with local PostgreSQL
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql

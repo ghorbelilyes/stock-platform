@@ -1,0 +1,6 @@
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      SPRING_SQL_INIT_DATA_LOCATIONS: classpath:data.sql
