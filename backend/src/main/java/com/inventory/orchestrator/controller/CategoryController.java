@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -32,6 +33,7 @@ public class CategoryController {
      * Get categories with pagination, sorting, filtering, and search
      */
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     @Operation(
         summary = "Get all categories",
         description = "Retrieve categories with pagination, sorting, filtering, and search support"
@@ -70,6 +72,7 @@ public class CategoryController {
     }
     
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(
         summary = "Get category by ID",
         description = "Retrieve a specific category by its ID"
@@ -83,6 +86,7 @@ public class CategoryController {
     }
     
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Create a new category",
         description = "Create a new category with name and optional description"
@@ -111,6 +115,7 @@ public class CategoryController {
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Update a category",
         description = "Update an existing category by its ID"
@@ -147,6 +152,7 @@ public class CategoryController {
     }
     
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
         summary = "Delete a category",
         description = "Delete a category by its ID. Note: This will fail if category has associated products."
@@ -171,6 +177,7 @@ public class CategoryController {
     }
     
     @GetMapping("/{id}/products")
+    @PreAuthorize("isAuthenticated()")
     @Operation(
         summary = "Get products by category",
         description = "Retrieve all products belonging to a specific category"

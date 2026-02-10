@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ public class TransferController {
     }
     
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Page<TransferView>>> getAllTransfers(
         @RequestParam(required = false) Long storeSent,
         @RequestParam(required = false) Long storeReceive,
@@ -72,12 +74,14 @@ public class TransferController {
     }
 
     @GetMapping("/suggestions")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<TransferSuggestionDTO>>> getSuggestions() {
         List<TransferSuggestionDTO> suggestions = suggestionService.getSuggestions();
         return ResponseEntity.ok(ApiResponse.success(suggestions, "Transfer suggestions retrieved successfully"));
     }
 
     @PostMapping("/suggestions/approve")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Transfer>> approveSuggestion(@RequestBody ApproveSuggestionRequest request) {
         if (request == null || request.getSuggestionId() == null || request.getSuggestionId().isBlank()) {
             return ResponseEntity.badRequest()

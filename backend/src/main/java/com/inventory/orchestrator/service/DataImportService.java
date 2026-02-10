@@ -33,6 +33,7 @@ public class DataImportService {
     private final ColumnMappingService columnMappingService;
     private final ObjectMapper objectMapper;
     private final StockConsistencyValidationService stockConsistencyValidationService;
+    private final AuditService auditService;
     
     @Autowired
     public DataImportService(StockRepository stockRepository,
@@ -44,7 +45,8 @@ public class DataImportService {
                             CsvProcessingService csvProcessingService,
                             ColumnMappingService columnMappingService,
                             ObjectMapper objectMapper,
-                            StockConsistencyValidationService stockConsistencyValidationService) {
+                            StockConsistencyValidationService stockConsistencyValidationService,
+                            AuditService auditService) {
         this.stockRepository = stockRepository;
         this.salesRepository = salesRepository;
         this.transferRepository = transferRepository;
@@ -55,6 +57,7 @@ public class DataImportService {
         this.columnMappingService = columnMappingService;
         this.objectMapper = objectMapper;
         this.stockConsistencyValidationService = stockConsistencyValidationService;
+        this.auditService = auditService;
     }
     
     /**
@@ -756,7 +759,17 @@ public class DataImportService {
         fileUpload.setRowsProcessed(result.getRowsProcessed());
         fileUpload.setRowsInserted(result.getRowsInserted());
         fileUpload.setRowsFailed(result.getRowsFailed());
-        fileUploadRepository.save(fileUpload);
+        FileUpload saved = fileUploadRepository.save(fileUpload);
+        
+        // Audit log the file upload/import
+        String action = "FILE_UPLOAD_" + saved.getFileType().name();
+        auditService.logAudit(
+            action,
+            "FileUpload",
+            saved.getId(),
+            null, // No old value for new upload
+            saved // New value (file upload record)
+        );
     }
     
     private Long getLongValue(Map<String, Object> row, String key) {

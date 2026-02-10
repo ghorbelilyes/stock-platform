@@ -26,10 +26,14 @@ public class TransferSuggestionService {
 
     private final StockRepository stockRepository;
     private final TransferRepository transferRepository;
+    private final AuditService auditService;
 
-    public TransferSuggestionService(StockRepository stockRepository, TransferRepository transferRepository) {
+    public TransferSuggestionService(StockRepository stockRepository, 
+                                   TransferRepository transferRepository,
+                                   AuditService auditService) {
         this.stockRepository = stockRepository;
         this.transferRepository = transferRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -189,7 +193,18 @@ public class TransferSuggestionService {
             quantity,
             "approved"  // Status: approved (will move to in_transit later)
         );
-        return transferRepository.save(t);
+        Transfer saved = transferRepository.save(t);
+        
+        // Audit log the transfer approval
+        auditService.logAudit(
+            "TRANSFER_APPROVE",
+            "Transfer",
+            saved.getId(),
+            null, // No old value for new transfer
+            saved // New value
+        );
+        
+        return saved;
     }
 
     private static class StockEntry {

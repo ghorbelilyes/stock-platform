@@ -186,9 +186,10 @@ export class Dashboard implements OnInit {
             next: (data) => {
                 // Calculate KPIs
                 this.kpiData.totalProducts = data.products.length;
-                
+
                 // Count active transfers
-                const activeTransfers = data.transfers.filter((t: any) => 
+                const transfersList = Array.isArray(data.transfers) ? data.transfers : (data.transfers?.content || []);
+                const activeTransfers = transfersList.filter((t: any) =>
                     t.status === 'approved' || t.status === 'picked' || t.status === 'in_transit'
                 );
                 this.kpiData.transfersInProgress = activeTransfers.length;
@@ -253,7 +254,7 @@ export class Dashboard implements OnInit {
     private prepareStockChart(stocks: any) {
         // Process stock data for chart
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        
+
         // Group stocks by status (mock calculation for now)
         const inStock = months.map(() => Math.floor(Math.random() * 5) + 3);
         const lowStock = months.map(() => Math.floor(Math.random() * 2) + 1);
@@ -305,7 +306,7 @@ export class Dashboard implements OnInit {
 
     private prepareSalesChart(sales: any) {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        
+
         // Process sales data (mock for now)
         const salesData = [
             {
@@ -350,7 +351,7 @@ export class Dashboard implements OnInit {
 
     private prepareDefaultCharts() {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        
+
         this.translateService.get('common.noData').subscribe(noDataLabel => {
             this.stockChartData = {
                 labels: months,

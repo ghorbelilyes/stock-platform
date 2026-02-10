@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,6 +29,7 @@ public class StockController {
     }
     
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(
         summary = "Get all stocks",
         description = "Retrieve stocks with optional filters by storeId and productId, with pagination support"
@@ -66,6 +68,7 @@ public class StockController {
     }
     
     @GetMapping("/store/{storeId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(
         summary = "Get stocks by store ID",
         description = "Retrieve all stock entries for a specific store with pagination and incoming/outgoing transfer quantities"
@@ -81,6 +84,7 @@ public class StockController {
     }
     
     @GetMapping("/product/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Operation(
         summary = "Get stocks by product ID",
         description = "Retrieve all stock entries for a specific product across all stores with pagination and incoming/outgoing transfer quantities"
