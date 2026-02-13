@@ -100,7 +100,7 @@ LANGFUSE_SECRET_KEY = _EnvironmentVariable("LANGFUSE_SECRET_KEY",str,"sk-lf-b91f
 LANGFUSE_BASE_URL = _EnvironmentVariable("LANGFUSE_BASE_URL",str,"http://localhost:3000",)
 
 DATABASE_ENDPOINT = _EnvironmentVariable(
-    "DATABASE_URL",
+    "DATABASE_ENDPOINT",
     str,
     "postgres://secret:secret@localhost:5432/stock?sslmode=disable"
 )#: Specifies the ``pool_size`` parameter to use for ``sqlalchemy.create_engine`` in the SQLAlchemy

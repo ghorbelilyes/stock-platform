@@ -20,6 +20,22 @@ services:
       retries: 5
     networks:
       - inventory-network
+  postgres-agent:
+    image: postgres:15-alpine
+    container_name: postgres-agent
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stock
+    volumes:
+      - postgres_agent_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventory-network
 
   backend:
     build:
@@ -46,6 +62,20 @@ services:
       retries: 3
       start_period: 40s
 
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: agent-backend
+    environment:
+      DATABASE_ENDPOINT: postgres://postgres:postgres@postgres-agent:5432/stock?sslmode=disable
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres-agent:
+        condition: service_healthy
+    networks:
+      - inventory-network
   frontend:
     build:
       context: ./front
@@ -61,7 +91,8 @@ services:
 volumes:
   postgres_data:
     driver: local
-
+  postgres_agent_data:
+    driver: local
 networks:
   inventory-network:
     driver: bridge
