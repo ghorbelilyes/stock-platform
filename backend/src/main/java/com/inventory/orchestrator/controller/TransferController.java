@@ -2,9 +2,11 @@ package com.inventory.orchestrator.controller;
 
 import com.inventory.orchestrator.dto.ApiResponse;
 import com.inventory.orchestrator.dto.ApproveSuggestionRequest;
+import com.inventory.orchestrator.dto.CreateTransferSuggestionRequest;
 import com.inventory.orchestrator.dto.TransferSuggestionDTO;
 import com.inventory.orchestrator.dto.TransferView;
 import com.inventory.orchestrator.entity.Transfer;
+import com.inventory.orchestrator.entity.TransferSuggestion;
 import com.inventory.orchestrator.repository.TransferRepository;
 import com.inventory.orchestrator.service.TransferSuggestionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +77,21 @@ public class TransferController {
     public ResponseEntity<ApiResponse<List<TransferSuggestionDTO>>> getSuggestions() {
         List<TransferSuggestionDTO> suggestions = suggestionService.getSuggestions();
         return ResponseEntity.ok(ApiResponse.success(suggestions, "Transfer suggestions retrieved successfully"));
+    }
+
+    @PostMapping("/suggestions")
+    public ResponseEntity<ApiResponse<TransferSuggestion>> createSuggestion(@RequestBody CreateTransferSuggestionRequest request) {
+        if (request == null) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_REQUEST", "Request body is required", List.of()));
+        }
+        try {
+            TransferSuggestion suggestion = suggestionService.createSuggestion(request);
+            return ResponseEntity.ok(ApiResponse.success(suggestion, "Transfer suggestion created successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_REQUEST", e.getMessage(), List.of()));
+        }
     }
 
     @PostMapping("/suggestions/approve")

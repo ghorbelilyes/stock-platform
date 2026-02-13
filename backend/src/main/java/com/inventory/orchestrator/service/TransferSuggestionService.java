@@ -1,12 +1,18 @@
 package com.inventory.orchestrator.service;
 
+import com.inventory.orchestrator.dto.CreateTransferSuggestionRequest;
 import com.inventory.orchestrator.dto.StockView;
 import com.inventory.orchestrator.dto.TransferSuggestionDTO;
 import com.inventory.orchestrator.entity.Transfer;
+import com.inventory.orchestrator.entity.TransferSuggestion;
+import com.inventory.orchestrator.repository.ProductRepository;
 import com.inventory.orchestrator.repository.StockRepository;
+import com.inventory.orchestrator.repository.StoreRepository;
 import com.inventory.orchestrator.repository.TransferRepository;
+import com.inventory.orchestrator.repository.TransferSuggestionRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -14,8 +20,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Computes transfer suggestions by comparing stock levels across stores:
- * suggests moving stock from stores with excess to stores with low or zero stock.
+ * Manages transfer suggestions stored in the database.
+ * Can also compute suggestions dynamically from stock levels.
  */
 @Service
 public class TransferSuggestionService {
@@ -26,10 +32,21 @@ public class TransferSuggestionService {
 
     private final StockRepository stockRepository;
     private final TransferRepository transferRepository;
+    private final TransferSuggestionRepository suggestionRepository;
+    private final StoreRepository storeRepository;
+    private final ProductRepository productRepository;
 
-    public TransferSuggestionService(StockRepository stockRepository, TransferRepository transferRepository) {
+    public TransferSuggestionService(
+            StockRepository stockRepository,
+            TransferRepository transferRepository,
+            TransferSuggestionRepository suggestionRepository,
+            StoreRepository storeRepository,
+            ProductRepository productRepository) {
         this.stockRepository = stockRepository;
         this.transferRepository = transferRepository;
+        this.suggestionRepository = suggestionRepository;
+        this.storeRepository = storeRepository;
+        this.productRepository = productRepository;
     }
 
     /**
@@ -57,97 +74,103 @@ public class TransferSuggestionService {
         }
     }
 
+    /**
+     * Get all transfer suggestions from the database.
+     */
     public List<TransferSuggestionDTO> getSuggestions() {
-        List<StockView> allStock = stockRepository.findViewsWithFilters(
-            null, null, null, null, null, null, null,
-            Pageable.unpaged()
-        ).getContent();
-
-        // Group by product: productId -> list of (storeId, storeName, productName, sku, quantity)
-        Map<Long, List<StockEntry>> byProduct = new HashMap<>();
-        for (StockView v : allStock) {
-            StockEntry e = new StockEntry(
-                v.getIdStore(),
-                v.getStore().getName(),
-                v.getIdProduct(),
-                v.getProduct().getName(),
-                v.getProduct().getCodeBarre(),
-                v.getQuantity()
-            );
-            byProduct.computeIfAbsent(v.getIdProduct(), k -> new ArrayList<>()).add(e);
-        }
-
-        List<TransferSuggestionDTO> suggestions = new ArrayList<>();
-        String now = Instant.now().toString();
-
-        for (Map.Entry<Long, List<StockEntry>> e : byProduct.entrySet()) {
-            Long productId = e.getKey();
-            List<StockEntry> entries = e.getValue();
-            if (entries.size() < 2) continue;
-
-            int totalQty = entries.stream().mapToInt(StockEntry::getQuantity).sum();
-            double avg = (double) totalQty / entries.size();
-
-            // Donors: quantity >= MIN_EXCESS_QUANTITY and above average (can give some away)
-            List<StockEntry> donors = entries.stream()
-                .filter(s -> s.getQuantity() >= MIN_EXCESS_QUANTITY && s.getQuantity() > avg)
-                .sorted(Comparator.comparingInt(StockEntry::getQuantity).reversed())
-                .collect(Collectors.toList());
-
-            // Receivers: quantity < LOW_STOCK_THRESHOLD (need stock)
-            List<StockEntry> receivers = entries.stream()
-                .filter(s -> s.getQuantity() < LOW_STOCK_THRESHOLD)
-                .sorted(Comparator.comparingInt(StockEntry::getQuantity))
-                .collect(Collectors.toList());
-
-            String productName = entries.get(0).getProductName();
-            String sku = entries.get(0).getSku();
-
-            for (StockEntry donor : donors) {
-                if (suggestions.size() >= MAX_SUGGESTIONS) break;
-                int donorExcess = Math.max(0, donor.getQuantity() - (int) Math.ceil(avg));
-
-                for (StockEntry receiver : receivers) {
-                    if (donor.getStoreId().equals(receiver.getStoreId())) continue;
-                    if (suggestions.size() >= MAX_SUGGESTIONS) break;
-
-                    int need = LOW_STOCK_THRESHOLD - receiver.getQuantity();
-                    if (need <= 0) continue;
-
-                    int transferQty = Math.min(donorExcess, need);
-                    if (transferQty <= 0) continue;
-
-                    String priority = receiver.getQuantity() == 0 ? "high" : (receiver.getQuantity() < 3 ? "medium" : "low");
-                    int confidence = receiver.getQuantity() == 0 ? 95 : (receiver.getQuantity() < 3 ? 80 : 65);
-                    String reason = receiver.getQuantity() == 0
-                        ? "Stock out at destination"
-                        : "Low stock at destination (" + receiver.getQuantity() + " on hand)";
-
-                    TransferSuggestionDTO dto = new TransferSuggestionDTO();
-                    dto.setId(suggestionId(donor.getStoreId(), receiver.getStoreId(), productId));
-                    dto.setFromStoreId(donor.getStoreId());
-                    dto.setFromStoreName(donor.getStoreName());
-                    dto.setToStoreId(receiver.getStoreId());
-                    dto.setToStoreName(receiver.getStoreName());
-                    dto.setSku(sku);
-                    dto.setProductId(productId);
-                    dto.setProductName(productName);
-                    dto.setQuantity(transferQty);
-                    dto.setPriority(priority);
-                    dto.setReason(reason);
-                    dto.setConfidence(confidence);
-                    dto.setCreatedAt(now);
-                    suggestions.add(dto);
-                }
+        List<TransferSuggestion> entities = suggestionRepository.findAll();
+        
+        // Fetch store and product names for all suggestions
+        Map<Long, String> storeNames = new HashMap<>();
+        Map<Long, String> productNames = new HashMap<>();
+        Map<Long, String> productSkus = new HashMap<>();
+        
+        for (TransferSuggestion ts : entities) {
+            if (!storeNames.containsKey(ts.getFromStoreId())) {
+                storeRepository.findById(ts.getFromStoreId())
+                    .ifPresent(store -> storeNames.put(store.getId(), store.getName()));
+            }
+            if (!storeNames.containsKey(ts.getToStoreId())) {
+                storeRepository.findById(ts.getToStoreId())
+                    .ifPresent(store -> storeNames.put(store.getId(), store.getName()));
+            }
+            if (!productNames.containsKey(ts.getProductId())) {
+                productRepository.findById(ts.getProductId())
+                    .ifPresent(product -> {
+                        productNames.put(product.getId(), product.getName());
+                        productSkus.put(product.getId(), product.getCodeBarre());
+                    });
             }
         }
-
+        
+        // Convert entities to DTOs
+        List<TransferSuggestionDTO> suggestions = new ArrayList<>();
+        for (TransferSuggestion ts : entities) {
+            TransferSuggestionDTO dto = new TransferSuggestionDTO();
+            dto.setId(suggestionId(ts.getFromStoreId(), ts.getToStoreId(), ts.getProductId()));
+            dto.setFromStoreId(ts.getFromStoreId());
+            dto.setFromStoreName(storeNames.getOrDefault(ts.getFromStoreId(), "Unknown Store"));
+            dto.setToStoreId(ts.getToStoreId());
+            dto.setToStoreName(storeNames.getOrDefault(ts.getToStoreId(), "Unknown Store"));
+            dto.setSku(productSkus.getOrDefault(ts.getProductId(), ""));
+            dto.setProductId(ts.getProductId());
+            dto.setProductName(productNames.getOrDefault(ts.getProductId(), "Unknown Product"));
+            dto.setQuantity(ts.getQuantity());
+            dto.setPriority(ts.getPriority());
+            dto.setReason(ts.getReason());
+            dto.setConfidence(ts.getConfidence());
+            dto.setCreatedAt(ts.getCreatedAt() != null ? ts.getCreatedAt().toString() : Instant.now().toString());
+            suggestions.add(dto);
+        }
+        
         // Sort by priority (high first) then confidence
         suggestions.sort(Comparator
             .comparing(TransferSuggestionDTO::getPriority, (a, b) -> priorityOrder(b) - priorityOrder(a))
             .thenComparing(TransferSuggestionDTO::getConfidence, Comparator.reverseOrder()));
-
+        
         return suggestions;
+    }
+    
+    /**
+     * Create a new transfer suggestion and save it to the database.
+     */
+    @Transactional
+    public TransferSuggestion createSuggestion(CreateTransferSuggestionRequest request) {
+        if (request.getFromStoreId() == null || request.getToStoreId() == null || 
+            request.getProductId() == null || request.getQuantity() == null) {
+            throw new IllegalArgumentException("fromStoreId, toStoreId, productId, and quantity are required");
+        }
+        
+        if (request.getFromStoreId().equals(request.getToStoreId())) {
+            throw new IllegalArgumentException("fromStoreId and toStoreId must be different");
+        }
+        
+        if (request.getQuantity() <= 0) {
+            throw new IllegalArgumentException("quantity must be greater than 0");
+        }
+        
+        // Validate stores and product exist
+        if (!storeRepository.existsById(request.getFromStoreId())) {
+            throw new IllegalArgumentException("fromStoreId does not exist");
+        }
+        if (!storeRepository.existsById(request.getToStoreId())) {
+            throw new IllegalArgumentException("toStoreId does not exist");
+        }
+        if (!productRepository.existsById(request.getProductId())) {
+            throw new IllegalArgumentException("productId does not exist");
+        }
+        
+        TransferSuggestion suggestion = new TransferSuggestion(
+            request.getFromStoreId(),
+            request.getToStoreId(),
+            request.getProductId(),
+            request.getQuantity(),
+            request.getPriority() != null ? request.getPriority() : "medium",
+            request.getReason(),
+            request.getConfidence() != null ? request.getConfidence() : 70
+        );
+        
+        return suggestionRepository.save(suggestion);
     }
 
     private static int priorityOrder(String p) {
@@ -158,7 +181,9 @@ public class TransferSuggestionService {
 
     /**
      * Approve a suggestion: create the actual transfer. Quantity is optional (uses suggestion quantity if not provided).
+     * Can use either suggestionId string (format: "fromStoreId-toStoreId-productId") or entity ID.
      */
+    @Transactional
     public Transfer approveSuggestion(String suggestionId, Integer quantityOverride) {
         long[] ids = parseSuggestionId(suggestionId);
         if (ids == null) {
@@ -168,15 +193,27 @@ public class TransferSuggestionService {
         long toStoreId = ids[1];
         long productId = ids[2];
 
-        List<TransferSuggestionDTO> list = getSuggestions();
-        TransferSuggestionDTO suggestion = list.stream()
-            .filter(s -> suggestionId.equals(s.getId()))
-            .findFirst()
-            .orElse(null);
-
-        int quantity = quantityOverride != null && quantityOverride > 0
-            ? quantityOverride
-            : (suggestion != null ? suggestion.getQuantity() : 1);
+        // Try to find the suggestion in the database
+        List<TransferSuggestion> suggestions = suggestionRepository.findByFromStoreIdAndToStoreIdAndProductId(
+            fromStoreId, toStoreId, productId
+        );
+        
+        TransferSuggestion suggestion = suggestions.isEmpty() ? null : suggestions.get(0);
+        
+        int quantity;
+        if (quantityOverride != null && quantityOverride > 0) {
+            quantity = quantityOverride;
+        } else if (suggestion != null) {
+            quantity = suggestion.getQuantity();
+        } else {
+            // Fallback: try to get from computed suggestions
+            List<TransferSuggestionDTO> list = getSuggestions();
+            TransferSuggestionDTO dto = list.stream()
+                .filter(s -> suggestionId.equals(s.getId()))
+                .findFirst()
+                .orElse(null);
+            quantity = (dto != null && dto.getQuantity() != null) ? dto.getQuantity() : 1;
+        }
 
         if (quantity <= 0) quantity = 1;
 
@@ -185,11 +222,21 @@ public class TransferSuggestionService {
             fromStoreId,
             toStoreId,
             productId,
-            "Approved transfer suggestion",
+            suggestion != null && suggestion.getReason() != null 
+                ? "Approved: " + suggestion.getReason()
+                : "Approved transfer suggestion",
             quantity,
             "approved"  // Status: approved (will move to in_transit later)
         );
-        return transferRepository.save(t);
+        
+        Transfer saved = transferRepository.save(t);
+        
+        // Optionally delete the suggestion after approval
+        if (suggestion != null) {
+            suggestionRepository.delete(suggestion);
+        }
+        
+        return saved;
     }
 
     private static class StockEntry {
