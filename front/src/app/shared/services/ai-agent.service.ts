@@ -1,37 +1,79 @@
-import { Injectable } from '@angular/core';
-import { TransferSuggestion } from '../models/inventory.models';
-import { TransferService } from './transfer.service';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, from, map } from 'rxjs';
+import {
+    ThreadSummary,
+    ThreadDetailResponse,
+    ThreadCreateResponse,
+    AskRequest,
+    ChatStreamEvent
+} from '../models/chat.models';
 
-// TODO: Replace with actual AI/LLM API integration
-// MOCK DATA UNTIL BACKEND READY
 @Injectable({
     providedIn: 'root'
 })
 export class AiAgentService {
-    constructor(private transferService: TransferService) {}
+    private http = inject(HttpClient);
+    private apiUrl = 'http://localhost:8000/api';
 
-    // TODO: Replace with actual AI API call
-    chat(prompt: string): Promise<{
-        summary: string;
-        suggestions: TransferSuggestion[];
-        actions: Array<{ label: string; action: string; data?: any }>;
-    }> {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const suggestions = this.transferService.getSuggestions();
-                const filtered = prompt.toLowerCase().includes('7 days') || prompt.toLowerCase().includes('week')
-                    ? suggestions.slice(0, 5)
-                    : suggestions.slice(0, 10);
+    getThreads(): Observable<ThreadSummary[]> {
+        return this.http.get<ThreadSummary[]>(`${this.apiUrl}/threads`);
+    }
 
-                resolve({
-                    summary: `Based on your inventory data, I've identified ${filtered.length} transfer opportunities. These suggestions are based on current stock levels, sales trends, and reorder points.`,
-                    suggestions: filtered,
-                    actions: [
-                        { label: 'Approve All', action: 'approve_all', data: { suggestionIds: filtered.map(s => s.id) } },
-                        { label: 'Create Transfers', action: 'create_transfers', data: { suggestions: filtered } }
-                    ]
-                });
-            }, 1500);
+    getThread(threadId: string): Observable<ThreadDetailResponse> {
+        return this.http.get<ThreadDetailResponse>(`${this.apiUrl}/threads/${threadId}`);
+    }
+
+    createThread(threadId?: string): Observable<ThreadCreateResponse> {
+        return this.http.post<ThreadCreateResponse>(`${this.apiUrl}/threads`, { thread_id: threadId });
+    }
+
+    deleteThread(threadId: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/threads/${threadId}`);
+    }
+
+    async *askAgenticStream(question: string, threadId: string): AsyncIterable<string> {
+        const payload: AskRequest = { question, thread_id: threadId };
+
+        const response = await fetch(`${this.apiUrl}/ask-agentic`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('ReadableStream not supported');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const event: ChatStreamEvent = JSON.parse(line);
+                    if (event.event === 'on_chat_model_stream') {
+                        yield event.data.chunk.content;
+                    }
+                } catch (e) {
+                    console.error('Error parsing NDJSON line:', line, e);
+                }
+            }
+        }
     }
 }

@@ -54,16 +54,22 @@ export class AppMenu implements OnInit, OnDestroy {
             'navigation.salesAnalysis',
             'navigation.transferSuggestions',
             'navigation.reports',
-            'navigation.settings'
+            'navigation.settings',
+            'navigation.aiAssistant'
         ]).subscribe(translations => {
             this.model = [
                 {
                     label: translations['navigation.home'],
                     items: [
-                        { 
-                            label: translations['navigation.dashboard'], 
-                            icon: 'pi pi-fw pi-home', 
-                            routerLink: ['/'] 
+                        {
+                            label: translations['navigation.dashboard'],
+                            icon: 'pi pi-fw pi-home',
+                            routerLink: ['/']
+                        },
+                        {
+                            label: translations['navigation.aiAssistant'] || 'AI Assistant',
+                            icon: 'pi pi-fw pi-sparkles',
+                            routerLink: ['/pages/chat']
                         }
                     ]
                 },

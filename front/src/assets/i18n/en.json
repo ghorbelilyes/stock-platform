@@ -76,7 +76,8 @@
     "stockOverview": "Stock Overview",
     "salesAnalysis": "Sales Analysis",
     "transferSuggestions": "Transfer Suggestions",
-    "reports": "Reports"
+    "reports": "Reports",
+    "aiAssistant": "AI Assistant"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -121,10 +122,6 @@
     "title": "Categories",
     "description": "Manage product categories and their associated products.",
     "addCategory": "Add Category",
-    "editCategory": "Edit Category",
-    "deleteCategory": "Delete Category",
-    "categoryName": "Category Name",
-    "description": "Description",
     "noCategories": "No categories found",
     "addSelectedProducts": "Add Selected Products",
     "createNewProduct": "Create New Product"
@@ -209,7 +206,7 @@
     "quantityForTransfer": "Quantity for transfer",
     "virtualQuantity": "Virtual quantity"
   },
-    "upload": {
+  "upload": {
     "title": "Upload Data",
     "description": "Upload your inventory data files to get started with AI-powered transfer suggestions.",
     "storesFile": "Stores File",

@@ -7,5 +7,6 @@ export default [
     { path: 'documentation', component: Documentation },
     { path: 'crud', component: Crud },
     { path: 'empty', component: Empty },
+    { path: 'chat', loadChildren: () => import('./chat/chat.routes') },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

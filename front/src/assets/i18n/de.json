@@ -76,7 +76,8 @@
     "stockOverview": "Bestandsübersicht",
     "salesAnalysis": "Verkaufsanalyse",
     "transferSuggestions": "Übertragungsvorschläge",
-    "reports": "Berichte"
+    "reports": "Berichte",
+    "aiAssistant": "KI-Assistent"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -121,10 +122,6 @@
     "title": "Kategorien",
     "description": "Verwalten Sie Produktkategorien und deren zugehörige Produkte.",
     "addCategory": "Kategorie hinzufügen",
-    "editCategory": "Kategorie bearbeiten",
-    "deleteCategory": "Kategorie löschen",
-    "categoryName": "Kategoriename",
-    "description": "Beschreibung",
     "noCategories": "Keine Kategorien gefunden",
     "addSelectedProducts": "Ausgewählte Produkte hinzufügen",
     "createNewProduct": "Neues Produkt erstellen"
@@ -209,7 +206,7 @@
     "quantityForTransfer": "Menge für Übertragung",
     "virtualQuantity": "Virtuelle Menge"
   },
-    "upload": {
+  "upload": {
     "title": "Daten hochladen",
     "description": "Laden Sie Ihre Inventardateien hoch, um mit KI-gestützten Übertragungsvorschlägen zu beginnen.",
     "storesFile": "Läden-Datei",
