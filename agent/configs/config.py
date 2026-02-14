@@ -98,6 +98,8 @@ LANGFUSE_PUBLIC_KEY = _EnvironmentVariable("LANGFUSE_PUBLIC_KEY",str,"pk-lf-51f1
 LANGFUSE_SECRET_KEY = _EnvironmentVariable("LANGFUSE_SECRET_KEY",str,"sk-lf-b91f99e9-671c-4ca6-87dc-eb5caec7d1ad",)
 #: langfuse base url
 LANGFUSE_BASE_URL = _EnvironmentVariable("LANGFUSE_BASE_URL",str,"http://localhost:3000",)
+#: stock endpoint
+STOCK_ENDPOINT = _EnvironmentVariable("STOCK_ENDPOINT",str,"http://inventory-backend:8080",)
 
 DATABASE_ENDPOINT = _EnvironmentVariable(
     "DATABASE_ENDPOINT",
