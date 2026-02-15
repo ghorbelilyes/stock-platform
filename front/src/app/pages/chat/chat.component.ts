@@ -1,6 +1,8 @@
-import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, SecurityContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -54,11 +56,32 @@ import { ChatHistoryComponent } from './chat-history.component';
                         class="flex" 
                         [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role === 'assistant'}">
                         
-                        <div [ngClass]="{
-                            'bg-primary-500 text-white rounded-br-none': msg.role === 'user',
-                            'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-0 rounded-bl-none': msg.role === 'assistant'
-                        }" class="max-w-[80%] p-3 rounded-2xl shadow-sm">
-                            <div class="text-sm whitespace-pre-wrap">{{ msg.content }}</div>
+                        <div *ngIf="getDisplayContent(msg.content) || getSources(msg.content).length > 0 || msg.role === 'user'" 
+                            [ngClass]="{
+                                'bg-primary-500 text-white rounded-br-none': msg.role === 'user',
+                                'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-0 rounded-bl-none': msg.role === 'assistant'
+                            }" class="max-w-[80%] p-3 rounded-2xl shadow-sm">
+                            <div class="text-sm markdown-content" [innerHTML]="renderMarkdown(getDisplayContent(msg.content))"></div>
+                            
+                            <!-- Sources Section -->
+                            <div *ngIf="msg.role === 'assistant' && getSources(msg.content).length > 0" class="mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
+                                <details class="group">
+                                    <summary class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 cursor-pointer list-none hover:text-primary-500 transition-colors">
+                                        <i class="pi pi-link text-[10px]"></i>
+                                        <span>Sources ({{ getSources(msg.content).length }})</span>
+                                        <i class="pi pi-chevron-down text-[8px] transition-transform group-open:rotate-180"></i>
+                                    </summary>
+                                    <div class="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <a *ngFor="let source of getSources(msg.content)" 
+                                           [href]="source.href" 
+                                           target="_blank" 
+                                           class="flex items-center gap-2 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 no-underline bg-surface-50 dark:bg-surface-900/50 p-2 rounded-lg border border-surface-200 dark:border-surface-700 hover:border-primary-500 transition-all">
+                                            <i class="pi pi-external-link text-[10px]"></i>
+                                            <span class="truncate font-medium">{{ source.title || source.href }}</span>
+                                        </a>
+                                    </div>
+                                </details>
+                            </div>
                         </div>
                     </div>
 
@@ -108,10 +131,69 @@ import { ChatHistoryComponent } from './chat-history.component';
             0%, 100% { opacity: 0.3; transform: scale(0.8); }
             50% { opacity: 1; transform: scale(1.2); }
         }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        .markdown-content ::ng-deep table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            border: 1px solid var(--p-surface-200);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--p-surface-0);
+        }
+        .dark .markdown-content ::ng-deep table {
+            border-color: var(--p-surface-700);
+            background: var(--p-surface-900);
+        }
+        .markdown-content ::ng-deep th {
+            background: var(--p-surface-50);
+            color: var(--p-surface-700);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--p-surface-200);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+        }
+        .dark .markdown-content ::ng-deep th {
+            background: var(--p-surface-800);
+            color: var(--p-surface-300);
+            border-color: var(--p-surface-700);
+        }
+        .markdown-content ::ng-deep td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--p-surface-200);
+            color: var(--p-surface-900);
+        }
+        .dark .markdown-content ::ng-deep td {
+            border-color: var(--p-surface-700);
+            color: var(--p-surface-0);
+        }
+        .markdown-content ::ng-deep tr:last-child td {
+            border-bottom: none;
+        }
+        .markdown-content ::ng-deep tr:hover td {
+            background: var(--p-surface-50);
+        }
+        .dark .markdown-content ::ng-deep tr:hover td {
+            background: var(--p-surface-800);
+        }
+        .markdown-content ::ng-deep p {
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+        .markdown-content ::ng-deep p:first-child { margin-top: 0; }
+        .markdown-content ::ng-deep p:last-child { margin-bottom: 0; }
     `]
 })
 export class ChatComponent implements OnInit {
     private aiService = inject(AiAgentService);
+    private sanitizer = inject(DomSanitizer);
 
     threads: ThreadSummary[] = [];
     messages: ThreadMessage[] = [];
@@ -209,5 +291,76 @@ export class ChatComponent implements OnInit {
                 el.scrollTop = el.scrollHeight;
             }
         }, 50);
+    }
+
+    getDisplayContent(content: string): string {
+        if (!content) return '';
+        const boundary = this.getJsonBoundary(content);
+        if (boundary !== -1) {
+            return content.substring(boundary).trim();
+        }
+        // If it starts like JSON but hasn't closed yet, it's still streaming the prefix
+        if (content.startsWith('[') || content.startsWith('{')) {
+            return '';
+        }
+        return content;
+    }
+
+    renderMarkdown(content: string): SafeHtml {
+        if (!content) return '';
+        const rawHtml = marked.parse(content) as string;
+        return this.sanitizer.bypassSecurityTrustHtml(rawHtml);
+    }
+
+    getSources(content: string): any[] {
+        if (!content) return [];
+        const boundary = this.getJsonBoundary(content);
+        if (boundary === -1) return [];
+
+        try {
+            const jsonStr = content.substring(0, boundary);
+            const parsed = JSON.parse(jsonStr);
+            // Only return if it looks like the search results array
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].href) {
+                return parsed;
+            }
+            return [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    private getJsonBoundary(content: string): number {
+        if (!content || (content[0] !== '[' && content[0] !== '{')) return -1;
+
+        let stack = 0;
+        let inString = false;
+        let escape = false;
+
+        for (let i = 0; i < content.length; i++) {
+            const char = content[i];
+
+            if (escape) {
+                escape = false;
+                continue;
+            }
+            if (char === '\\') {
+                escape = true;
+                continue;
+            }
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (!inString) {
+                if (char === '[' || char === '{') stack++;
+                else if (char === ']' || char === '}') {
+                    stack--;
+                    if (stack === 0) return i + 1;
+                }
+            }
+        }
+        return -1;
     }
 }
