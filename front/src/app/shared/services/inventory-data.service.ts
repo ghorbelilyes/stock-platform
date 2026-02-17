@@ -175,6 +175,21 @@ export class InventoryDataService {
             );
     }
 
+    /** Get transfers where the given store is source or destination and product matches. Used for stock row expansion. */
+    getTransfersByStoreAndProduct(storeId: number, productId: number): Observable<any[]> {
+        const params = new HttpParams()
+            .set('storeId', storeId.toString())
+            .set('productId', productId.toString());
+        return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.transfers}/by-store-and-product`, { params })
+            .pipe(
+                map(response => (response?.data != null && Array.isArray(response.data)) ? response.data : []),
+                catchError(error => {
+                    console.error('Error fetching transfers by store and product:', error);
+                    return throwError(() => error);
+                })
+            );
+    }
+
     // Get sales with pagination, sorting, filtering, and search
     getSales(
         page: number = 0, 

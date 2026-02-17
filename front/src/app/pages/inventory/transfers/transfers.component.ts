@@ -9,6 +9,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TransferService } from '../../../shared/services/transfer.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
 import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.models';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface LazyLoadEvent {
     first?: number;
@@ -95,7 +97,16 @@ interface LazyLoadEvent {
 
             <div class="col-span-12">
                 <div class="card">
-                    <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold mb-4">{{ 'transfers.activeTransfers' | translate }}</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-surface-900 dark:text-surface-0 text-xl font-semibold">{{ 'transfers.activeTransfers' | translate }}</h2>
+                        <p-button 
+                            [label]="'transfers.exportApproved' | translate" 
+                            icon="pi pi-file-excel" 
+                            severity="success" 
+                            [outlined]="true"
+                            (onClick)="exportApprovedTransfers()">
+                        </p-button>
+                    </div>
                     <p-table 
                         [value]="transfers" 
                         [paginator]="true" 
@@ -224,7 +235,7 @@ export class TransfersComponent implements OnInit {
         this.loadingTransfers = true;
         const page = event.first && event.rows ? Math.floor(event.first / event.rows) : 0;
         const size = event.rows || this.pageSize;
-        
+
         this.pageSize = size;
 
         // Determine the UI sort field and order coming from PrimeNG
@@ -249,7 +260,7 @@ export class TransfersComponent implements OnInit {
             else if (sortField === 'notes') sortField = 'reason';
             // If sortField doesn't match any UI field, it might already be a backend field name, keep it as is
         }
-        
+
         // Fall back to current state if no sort info in event
         if (!sortField) {
             sortField = this.currentSortField || 'date';
@@ -259,7 +270,7 @@ export class TransfersComponent implements OnInit {
         // Update state for subsequent calls
         this.currentSortField = sortField;
         this.currentSortOrder = sortOrder;
-        
+
         // Build sort parameter
         const sortParam = `${sortField},${sortOrder === 1 ? 'asc' : 'desc'}`;
 
@@ -332,5 +343,50 @@ export class TransfersComponent implements OnInit {
         // Just store the latest sort state; actual mapping is done in loadTransfersDataLazy
         this.currentSortField = event.field || this.currentSortField || 'date';
         this.currentSortOrder = event.order !== null && event.order !== undefined ? event.order : this.currentSortOrder;
+    }
+
+    exportApprovedTransfers() {
+        // Fetch a larger batch of transfers to find all approved ones
+        this.loadingTransfers = true;
+        this.transferService.getTransfers(0, 1000).subscribe({
+            next: (response) => {
+                const allData = response.content || (Array.isArray(response) ? response : []);
+                const approvedData = allData.filter((t: any) => t.status === 'approved');
+
+                if (approvedData.length === 0) {
+                    console.warn('No approved transfers found to export');
+                    this.loadingTransfers = false;
+                    return;
+                }
+
+                this.generateExcel(approvedData);
+                this.loadingTransfers = false;
+            },
+            error: (err) => {
+                console.error('Export failed', err);
+                this.loadingTransfers = false;
+            }
+        });
+    }
+
+    private generateExcel(data: Transfer[]) {
+        const worksheetData = data.map(t => ({
+            'ID': t.id,
+            'Date': new Date(t.createdAt).toLocaleString(),
+            'Status': t.status,
+            'Source Store': t.sourceStoreName,
+            'Destination Store': t.destinationStoreName,
+            'Product': t.items[0]?.productName || 'N/A',
+            'Quantity': t.items[0]?.quantity || 0,
+            'Notes': t.notes || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Approved Transfers');
+
+        const excelBuffer: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const dataBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+        saveAs(dataBlob, `approved_transfers_${new Date().getTime()}.xlsx`);
     }
 }

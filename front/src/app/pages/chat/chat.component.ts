@@ -56,12 +56,95 @@ import { ChatHistoryComponent } from './chat-history.component';
                         class="flex" 
                         [ngClass]="{'justify-end': msg.role === 'user', 'justify-start': msg.role === 'assistant'}">
                         
-                        <div *ngIf="getDisplayContent(msg.content) || getSources(msg.content).length > 0 || msg.role === 'user'" 
+                        <div *ngIf="msg.role === 'user' || (msg.content && (getDisplayContent(msg.content) || getSources(msg.content).length > 0 || getActions(msg.content).length > 0 || getStocks(msg.content).length > 0))" 
                             [ngClass]="{
                                 'bg-primary-500 text-white rounded-br-none': msg.role === 'user',
                                 'bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-0 rounded-bl-none': msg.role === 'assistant'
                             }" class="max-w-[80%] p-3 rounded-2xl shadow-sm">
-                            <div class="text-sm markdown-content" [innerHTML]="renderMarkdown(getDisplayContent(msg.content))"></div>
+                            <div *ngIf="getDisplayContent(msg.content)" class="text-sm markdown-content" [innerHTML]="renderMarkdown(getDisplayContent(msg.content))"></div>
+
+                            <!-- Retrieved Stocks Table -->
+                            <div *ngIf="msg.role === 'assistant' && getStocks(msg.content).length > 0" class="mt-4 first:mt-0">
+                                <div class="flex items-center gap-2 mb-2 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wider">
+                                    <i class="pi pi-box"></i>
+                                    <span>Stock Report</span>
+                                </div>
+                                <div class="markdown-content">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Store</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-center">Incoming</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let s of getStocks(msg.content)">
+                                                <td>
+                                                    <div class="font-medium">{{ s.product?.name || 'Unknown' }}</div>
+                                                    <div class="text-[10px] opacity-60">#{{ s.idProduct || s.product?.id }}</div>
+                                                </td>
+                                                <td>
+                                                    <div class="font-medium">{{ s.store?.name || 'Unknown' }}</div>
+                                                    <div class="text-[10px] opacity-60">{{ s.store?.city || '' }}</div>
+                                                </td>
+                                                <td class="text-center font-bold">{{ s.quantity }}</td>
+                                                <td class="text-center text-primary-500 font-medium">{{ s.incomingQty || 0 }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Transfer Suggestions Table -->
+                            <div *ngIf="msg.role === 'assistant' && getActions(msg.content).length > 0" class="mt-4 first:mt-0">
+                                <div class="flex items-center gap-2 mb-2 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase tracking-wider">
+                                    <i class="pi pi-bolt"></i>
+                                    <span>Transfer Strategy</span>
+                                </div>
+                                <div class="markdown-content">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Path</th>
+                                                <th>Item</th>
+                                                <th class="text-center">Transfer Qty</th>
+                                                <th>Priority</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let act of getActions(msg.content)">
+                                                <td>
+                                                    <div class="flex items-center gap-1.5 font-medium">
+                                                        <span>{{ act.fromStoreId }}</span>
+                                                        <i class="pi pi-arrow-right text-[10px] opacity-50"></i>
+                                                        <span>{{ act.toStoreId }}</span>
+                                                    </div>
+                                                    <div *ngIf="act.reason" class="text-[9px] italic opacity-60 mt-0.5 line-clamp-1" [title]="act.reason">
+                                                        {{ act.reason }}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="font-medium">#{{ act.productId }}</div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="font-bold text-primary-500">{{ act.quantity }}</span>
+                                                </td>
+                                                <td>
+                                                    <span [ngClass]="{
+                                                        'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300': act.priority === 'MEDIUM',
+                                                        'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300': act.priority === 'HIGH' || act.priority === 'CRITICAL',
+                                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300': act.priority === 'LOW'
+                                                    }" class="px-1.5 py-0.5 rounded text-[9px] font-bold">
+                                                        {{ act.priority }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                             
                             <!-- Sources Section -->
                             <div *ngIf="msg.role === 'assistant' && getSources(msg.content).length > 0" class="mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
@@ -295,15 +378,16 @@ export class ChatComponent implements OnInit {
 
     getDisplayContent(content: string): string {
         if (!content) return '';
-        const boundary = this.getJsonBoundary(content);
-        if (boundary !== -1) {
-            return content.substring(boundary).trim();
+        let remaining = content.trim();
+        while (remaining.startsWith('[') || remaining.startsWith('{')) {
+            const boundary = this.getJsonBoundary(remaining);
+            if (boundary === -1) {
+                // If the block hasn't finished, hide the whole content to avoid raw JSON flash
+                return '';
+            }
+            remaining = remaining.substring(boundary).trim();
         }
-        // If it starts like JSON but hasn't closed yet, it's still streaming the prefix
-        if (content.startsWith('[') || content.startsWith('{')) {
-            return '';
-        }
-        return content;
+        return remaining;
     }
 
     renderMarkdown(content: string): SafeHtml {
@@ -314,20 +398,66 @@ export class ChatComponent implements OnInit {
 
     getSources(content: string): any[] {
         if (!content) return [];
-        const boundary = this.getJsonBoundary(content);
-        if (boundary === -1) return [];
-
-        try {
-            const jsonStr = content.substring(0, boundary);
-            const parsed = JSON.parse(jsonStr);
-            // Only return if it looks like the search results array
-            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].href) {
-                return parsed;
-            }
-            return [];
-        } catch (e) {
-            return [];
+        const blocks = this.getAllJsonBlocks(content);
+        for (const block of blocks) {
+            try {
+                const parsed = JSON.parse(block);
+                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].href) {
+                    return parsed;
+                }
+            } catch (e) { }
         }
+        return [];
+    }
+
+    getActions(content: string): any[] {
+        if (!content) return [];
+        const blocks = this.getAllJsonBlocks(content);
+        const actions: any[] = [];
+        for (const block of blocks) {
+            try {
+                const parsed = JSON.parse(block);
+                if (parsed.data && parsed.data.fromStoreId) {
+                    actions.push(parsed.data);
+                } else if (parsed.fromStoreId && parsed.productId) {
+                    actions.push(parsed);
+                }
+            } catch (e) { }
+        }
+        return actions;
+    }
+
+    getStocks(content: string): any[] {
+        if (!content) return [];
+        const blocks = this.getAllJsonBlocks(content);
+        let allStocks: any[] = [];
+        for (const block of blocks) {
+            try {
+                const parsed = JSON.parse(block);
+                // Handle different response wrappers if any
+                const data = parsed.data || parsed;
+                if (data.content && Array.isArray(data.content)) {
+                    if (data.content.length > 0 && (data.content[0].idStore !== undefined || data.content[0].idProduct !== undefined)) {
+                        allStocks = [...allStocks, ...data.content];
+                    }
+                } else if (Array.isArray(data) && data.length > 0 && data[0].idStore !== undefined) {
+                    allStocks = [...allStocks, ...data];
+                }
+            } catch (e) { }
+        }
+        return allStocks;
+    }
+
+    private getAllJsonBlocks(content: string): string[] {
+        const blocks: string[] = [];
+        let remaining = content.trim();
+        while (remaining.startsWith('[') || remaining.startsWith('{')) {
+            const boundary = this.getJsonBoundary(remaining);
+            if (boundary === -1) break;
+            blocks.push(remaining.substring(0, boundary));
+            remaining = remaining.substring(boundary).trim();
+        }
+        return blocks;
     }
 
     private getJsonBoundary(content: string): number {

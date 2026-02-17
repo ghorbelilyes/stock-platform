@@ -127,8 +127,12 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
         Pageable pageable
     );
 
-    /** Sum quantities of in-transit transfers by destination store and product. Returns [storeId, productId, sum]. */
-    @Query("SELECT t.idStoreReceive, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status = 'in_transit' GROUP BY t.idStoreReceive, t.idProduct")
+    /**
+     * Sum quantities of approved or in-transit transfers by destination store and product.
+     * This represents incoming quantity for a location (approved or shipped but not yet received).
+     * Returns [storeId, productId, sum].
+     */
+    @Query("SELECT t.idStoreReceive, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status IN ('approved', 'in_transit') GROUP BY t.idStoreReceive, t.idProduct")
     List<Object[]> sumIncomingByStoreAndProduct();
 
     /** Sum quantities of in-transit transfers by source store and product. Returns [storeId, productId, sum]. */
@@ -138,4 +142,22 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     /** Sum quantities of approved transfers by source store and product. Returns [storeId, productId, sum]. */
     @Query("SELECT t.idStoreSent, t.idProduct, SUM(t.quantity) FROM Transfer t WHERE t.status = 'approved' GROUP BY t.idStoreSent, t.idProduct")
     List<Object[]> sumOutgoingApprovedByStoreAndProduct();
+
+    /**
+     * Find transfers not yet received (status not in 'received', 'closed') where the given store
+     * is either source or destination and the product matches. Used for stock row expansion.
+     */
+    @Query(
+        value = "SELECT new com.inventory.orchestrator.dto.TransferView(" +
+            "t.id, t.date, t.idStoreSent, t.idStoreReceive, t.idProduct, t.reason, t.quantity, t.status, " +
+            "stSent.name, stRec.name, p.name) " +
+            "FROM Transfer t " +
+            "LEFT JOIN t.storeSent stSent " +
+            "LEFT JOIN t.storeReceive stRec " +
+            "LEFT JOIN t.product p " +
+            "WHERE (t.idStoreSent = :storeId OR t.idStoreReceive = :storeId) AND t.idProduct = :productId " +
+            "AND t.status NOT IN ('received', 'closed') " +
+            "ORDER BY t.date DESC"
+    )
+    List<TransferView> findTransfersByStoreAndProduct(@Param("storeId") Long storeId, @Param("productId") Long productId);
 }

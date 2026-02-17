@@ -6,11 +6,11 @@ public class StockView {
     private Integer quantity;
     /** Suggested quantity for transfer based on transfer suggestions */
     private Integer suggestionQuantity;
-    /** Sum of quantities from transfers (status in_transit) to this store for this product - Incoming (en route) */
+    /** Sum of quantities from transfers (status approved or in_transit) to this store for this product - Incoming */
     private Integer incomingQty;
-    /** Sum of quantities from transfers (status in_transit) from this store for this product - Out to transit (en route) */
+    /** Sum of quantities from transfers (status in_transit) from this store for this product - In Transit (outgoing) */
     private Integer outToTransit;
-    /** Sum of quantities from transfers (status approved) from this store for this product - Quantity for transfer (approved but not in_transit) */
+    /** Sum of quantities from transfers (status approved) from this store for this product - Reserved (approved but not in_transit) */
     private Integer quantityForTransfer;
     private StoreInfo store;
     private ProductInfo product;

@@ -9,6 +9,8 @@ import com.inventory.orchestrator.entity.Transfer;
 import com.inventory.orchestrator.entity.TransferSuggestion;
 import com.inventory.orchestrator.repository.TransferRepository;
 import com.inventory.orchestrator.service.TransferSuggestionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Page;
@@ -71,6 +73,19 @@ public class TransferController {
         );
         
         return ResponseEntity.ok(ApiResponse.success(transfers, "Transfers retrieved successfully"));
+    }
+
+    @GetMapping("/by-store-and-product")
+    @Operation(
+        summary = "Get transfers by store and product",
+        description = "Returns all transfers where the store is either source or destination and the product matches. Used for stock row expansion."
+    )
+    public ResponseEntity<ApiResponse<List<TransferView>>> getTransfersByStoreAndProduct(
+        @Parameter(description = "Store ID (involved as sender or receiver)", required = true) @RequestParam Long storeId,
+        @Parameter(description = "Product ID", required = true) @RequestParam Long productId
+    ) {
+        List<TransferView> list = transferRepository.findTransfersByStoreAndProduct(storeId, productId);
+        return ResponseEntity.ok(ApiResponse.success(list, "Transfers retrieved successfully"));
     }
 
     @GetMapping("/suggestions")
