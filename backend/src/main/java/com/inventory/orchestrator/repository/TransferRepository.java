@@ -87,6 +87,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
             "AND t.date >= :startDate " +
             "AND t.date <= :endDate " +
+            "AND ( (:status IS NULL AND t.status <> 'rejected') OR ( :status IS NOT NULL AND t.status = :status ) ) " +
             "AND (:search IS NULL OR " +
             "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
             "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -106,6 +107,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
             "AND (:productId IS NULL OR t.idProduct = :productId) " +
             "AND t.date >= :startDate " +
             "AND t.date <= :endDate " +
+            "AND ( (:status IS NULL AND t.status <> 'rejected') OR ( :status IS NOT NULL AND t.status = :status ) ) " +
             "AND (:search IS NULL OR " +
             "LOWER(t.reason) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
             "LOWER(CONCAT(t.idStoreSent, '')) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
@@ -124,6 +126,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate,
         @Param("search") String search,
+        @Param("status") String status,
         Pageable pageable
     );
 

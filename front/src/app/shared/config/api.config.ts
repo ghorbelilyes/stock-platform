@@ -22,6 +22,7 @@ export const API_CONFIG = {
         transfers: '/transfers',
         transferSuggestions: '/transfers/suggestions',
         transferSuggestionsApprove: '/transfers/suggestions/approve',
+        transferSuggestionsReject: '/transfers/suggestions/reject',
         categories: '/categories'
     }
 };

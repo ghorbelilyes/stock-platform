@@ -69,6 +69,7 @@ export class TransferService {
             productId?: number;
             startDate?: string;
             endDate?: string;
+            status?: string;
         }
     ): Observable<any> {
         let params = new HttpParams()
@@ -96,6 +97,9 @@ export class TransferService {
             }
             if (filters.endDate) {
                 params = params.set('endDate', filters.endDate);
+            }
+            if (filters.status) {
+                params = params.set('status', filters.status);
             }
         }
 
@@ -125,7 +129,7 @@ export class TransferService {
     // Transform backend transfer to frontend format (backend may send TransferView with store/product names)
     private transformTransfer(backendTransfer: any): Transfer {
         const status = backendTransfer.status as TransferStatus;
-        const validStatus: TransferStatus[] = ['proposed', 'approved', 'picked', 'in_transit', 'received', 'closed'];
+        const validStatus: TransferStatus[] = ['proposed', 'approved', 'picked', 'in_transit', 'received', 'closed', 'rejected'];
         return {
             id: backendTransfer.id?.toString() || '',
             createdAt: backendTransfer.date || new Date().toISOString(),
@@ -159,6 +163,26 @@ export class TransferService {
             }),
             catchError(error => {
                 console.error('Error approving suggestion:', error);
+                return throwError(() => error);
+            })
+        );
+    }
+
+    // Reject/dismiss transfer suggestion (with optional note)
+    rejectSuggestion(suggestionId: string, note?: string): Observable<Transfer> {
+        const body: { suggestionId: string; note?: string } = { suggestionId };
+        if (note != null && note.trim()) {
+            body.note = note.trim();
+        }
+        return this.http.post<ApiResponse<any>>(`${this.apiUrl}${API_CONFIG.endpoints.transferSuggestionsReject}`, body).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return this.transformTransfer(response.data);
+                }
+                throw new Error(response.message || 'Failed to reject suggestion');
+            }),
+            catchError(error => {
+                console.error('Error rejecting suggestion:', error);
                 return throwError(() => error);
             })
         );

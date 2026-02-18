@@ -32,7 +32,7 @@ public class Transfer {
     private Integer quantity;
     
     @Column(length = 32, nullable = false)
-    private String status = "in_transit"; // approved, in_transit, received, closed
+    private String status = "in_transit"; // approved, in_transit, received, closed, rejected
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_product", insertable = false, updatable = false)

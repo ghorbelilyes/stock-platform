@@ -3,6 +3,7 @@ package com.inventory.orchestrator.controller;
 import com.inventory.orchestrator.dto.ApiResponse;
 import com.inventory.orchestrator.dto.ApproveSuggestionRequest;
 import com.inventory.orchestrator.dto.CreateTransferSuggestionRequest;
+import com.inventory.orchestrator.dto.RejectSuggestionRequest;
 import com.inventory.orchestrator.dto.TransferSuggestionDTO;
 import com.inventory.orchestrator.dto.TransferView;
 import com.inventory.orchestrator.entity.Transfer;
@@ -47,6 +48,7 @@ public class TransferController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
         @RequestParam(required = false) String sort,
         @RequestParam(required = false) String search,
+        @RequestParam(required = false) String status,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
@@ -69,6 +71,7 @@ public class TransferController {
             startDateTime,
             endDateTime,
             normalize(search),
+            status != null ? status.trim() : null,
             pageable
         );
         
@@ -121,6 +124,24 @@ public class TransferController {
                 request.getQuantity()
             );
             return ResponseEntity.ok(ApiResponse.success(transfer, "Transfer created successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
+        }
+    }
+
+    @PostMapping("/suggestions/reject")
+    public ResponseEntity<ApiResponse<Transfer>> rejectSuggestion(@RequestBody RejectSuggestionRequest request) {
+        if (request == null || request.getSuggestionId() == null || request.getSuggestionId().isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
+        }
+        try {
+            Transfer transfer = suggestionService.rejectSuggestion(
+                request.getSuggestionId().trim(),
+                request.getNote()
+            );
+            return ResponseEntity.ok(ApiResponse.success(transfer, "Transfer suggestion rejected"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                 .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));

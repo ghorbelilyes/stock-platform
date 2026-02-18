@@ -53,7 +53,8 @@ export type TransferStatus =
     | 'picked' 
     | 'in_transit' 
     | 'received' 
-    | 'closed';
+    | 'closed'
+    | 'rejected';
 
 export interface Transfer {
     id: string;

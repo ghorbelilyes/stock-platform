@@ -239,6 +239,50 @@ public class TransferSuggestionService {
         return saved;
     }
 
+    /**
+     * Reject/dismiss a suggestion: create a transfer record with status "rejected" (with note), then delete the suggestion.
+     */
+    @Transactional
+    public Transfer rejectSuggestion(String suggestionId, String note) {
+        long[] ids = parseSuggestionId(suggestionId);
+        if (ids == null) {
+            throw new IllegalArgumentException("Invalid suggestion id: " + suggestionId);
+        }
+        long fromStoreId = ids[0];
+        long toStoreId = ids[1];
+        long productId = ids[2];
+
+        List<TransferSuggestion> suggestions = suggestionRepository.findByFromStoreIdAndToStoreIdAndProductId(
+            fromStoreId, toStoreId, productId
+        );
+        TransferSuggestion suggestion = suggestions.isEmpty() ? null : suggestions.get(0);
+
+        int quantity = (suggestion != null && suggestion.getQuantity() != null && suggestion.getQuantity() > 0)
+            ? suggestion.getQuantity()
+            : 1;
+
+        String reason = (note != null && !note.trim().isEmpty())
+            ? "Rejected: " + note.trim()
+            : "Rejected transfer suggestion";
+
+        Transfer t = new Transfer(
+            LocalDateTime.now(),
+            fromStoreId,
+            toStoreId,
+            productId,
+            reason,
+            quantity,
+            "rejected"
+        );
+        Transfer saved = transferRepository.save(t);
+
+        if (suggestion != null) {
+            suggestionRepository.delete(suggestion);
+        }
+
+        return saved;
+    }
+
     private static class StockEntry {
         private final Long storeId;
         private final String storeName;
