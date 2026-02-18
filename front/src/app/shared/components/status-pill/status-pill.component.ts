@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
     `
 })
 export class StatusPillComponent {
-    @Input() status!: 'ok' | 'low' | 'out' | 'overstock' | 'high' | 'medium' | 'low-priority';
+    @Input() status!: 'ok' | 'low' | 'out' | 'overstock' | 'high' | 'medium' | 'low-priority' | 'rejected';
     @Input() label?: string;
 
     getLabel(): string {
@@ -25,6 +25,7 @@ export class StatusPillComponent {
             'ok': 'bg-green-100 text-green-800',
             'low': 'bg-yellow-100 text-yellow-800',
             'out': 'bg-red-100 text-red-800',
+            'rejected': 'bg-red-100 text-red-800',
             'overstock': 'bg-blue-100 text-blue-800',
             'high': 'bg-red-100 text-red-800',
             'medium': 'bg-yellow-100 text-yellow-800',

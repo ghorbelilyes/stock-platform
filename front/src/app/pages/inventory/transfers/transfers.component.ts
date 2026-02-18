@@ -7,9 +7,12 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
+import { InventoryDataService } from '../../../shared/services/inventory-data.service';
 import { TransferService } from '../../../shared/services/transfer.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
-import { TransferSuggestion, Transfer } from '../../../shared/models/inventory.models';
+import { TransferSuggestion, Transfer, CreateTransferSuggestionRequest } from '../../../shared/models/inventory.models';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -26,7 +29,7 @@ interface LazyLoadEvent {
 @Component({
     selector: 'app-transfers',
     standalone: true,
-    imports: [CommonModule, FormsModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule, TextareaModule],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule, TextareaModule, InputNumberModule, SelectModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
@@ -36,7 +39,7 @@ interface LazyLoadEvent {
                             <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-2">{{ 'transfers.title' | translate }}</h1>
                             <p class="text-muted-color">{{ 'transfers.description' | translate }}</p>
                         </div>
-                        <p-button [label]="'transfers.newTransfer' | translate" icon="pi pi-plus" (onClick)="showTransferWizard = true"></p-button>
+                        <p-button [label]="'transfers.newTransfer' | translate" icon="pi pi-plus" (onClick)="openTransferWizard()"></p-button>
                     </div>
 
                     <p-table [value]="suggestions" [paginator]="true" [rows]="10" [loading]="loadingSuggestions">
@@ -72,7 +75,7 @@ interface LazyLoadEvent {
                                             [label]="'transfers.approve' | translate" 
                                             icon="pi pi-check" 
                                             size="small"
-                                            severity="success"
+                                            size="small"
                                             [loading]="approvingId === suggestion.id"
                                             (onClick)="approveTransfer(suggestion)"></p-button>
                                         <p-button 
@@ -103,7 +106,7 @@ interface LazyLoadEvent {
                         <p-button 
                             [label]="'transfers.exportApproved' | translate" 
                             icon="pi pi-file-excel" 
-                            severity="success" 
+                            icon="pi pi-file-excel" 
                             [outlined]="true"
                             (onClick)="exportApprovedTransfers()">
                         </p-button>
@@ -285,12 +288,66 @@ interface LazyLoadEvent {
         </p-dialog>
 
         <p-dialog [(visible)]="showTransferWizard" [modal]="true" [style]="{width: '50vw'}" [header]="'transfers.createTransfer' | translate">
-            <p>{{ 'transfers.wizardComingSoon' | translate }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'transfers.sourceStore' | translate }}</label>
+                    <p-select [options]="stores" [(ngModel)]="newSuggestion.fromStoreId" optionLabel="name" optionValue="id" [filter]="true" filterBy="name" [placeholder]="'common.select' | translate" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'transfers.destinationStore' | translate }}</label>
+                    <p-select [options]="stores" [(ngModel)]="newSuggestion.toStoreId" optionLabel="name" optionValue="id" [filter]="true" filterBy="name" [placeholder]="'common.select' | translate" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'common.product' | translate }}</label>
+                    <p-select [options]="products" [(ngModel)]="newSuggestion.productId" optionLabel="name" optionValue="id" [filter]="true" filterBy="name,codeBarre" [placeholder]="'common.select' | translate" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'common.quantity' | translate }}</label>
+                    <p-inputNumber [(ngModel)]="newSuggestion.quantity" [min]="1" [showButtons]="true" class="w-full"></p-inputNumber>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'common.priority' | translate }}</label>
+                    <p-select [options]="priorities" [(ngModel)]="newSuggestion.priority" optionLabel="label" optionValue="value" appendTo="body" class="w-full"></p-select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label>{{ 'common.confidence' | translate }} (%)</label>
+                    <p-inputNumber [(ngModel)]="newSuggestion.confidence" [min]="0" [max]="100" suffix="%" class="w-full"></p-inputNumber>
+                </div>
+                <div class="flex flex-col gap-2 col-span-2">
+                    <label>{{ 'common.reason' | translate }}</label>
+                    <textarea pInputTextarea [(ngModel)]="newSuggestion.reason" rows="3" class="w-full"></textarea>
+                </div>
+            </div>
+            <ng-template pTemplate="footer">
+                <p-button [label]="'common.cancel' | translate" severity="secondary" (onClick)="showTransferWizard = false"></p-button>
+                <p-button [label]="'common.create' | translate" [loading]="loadingCreation" (onClick)="createTransfer()"></p-button>
+            </ng-template>
         </p-dialog>
     `
 })
 export class TransfersComponent implements OnInit {
     private transferService = inject(TransferService);
+    private inventoryService = inject(InventoryDataService);
+
+    stores: any[] = [];
+    products: any[] = [];
+    loadingCreation = false;
+
+    priorities = [
+        { label: 'High', value: 'high' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Low', value: 'low' }
+    ];
+
+    newSuggestion: CreateTransferSuggestionRequest = {
+        fromStoreId: 0,
+        toStoreId: 0,
+        productId: 0,
+        quantity: 1,
+        priority: 'medium',
+        reason: '',
+        confidence: 100
+    };
     suggestions: TransferSuggestion[] = [];
     transfers: Transfer[] = [];
     globalSearch: string = '';
@@ -506,11 +563,11 @@ export class TransfersComponent implements OnInit {
         });
     }
 
-    getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' | 'overstock' {
+    getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' | 'overstock' | 'rejected' {
         if (status === 'received' || status === 'closed') return 'ok';
         if (status === 'approved') return 'overstock';
         if (status === 'picked' || status === 'in_transit') return 'medium';
-        if (status === 'rejected') return 'low-priority';
+        if (status === 'rejected') return 'rejected';
         return 'low-priority';
     }
 
@@ -582,5 +639,58 @@ export class TransfersComponent implements OnInit {
         const excelBuffer: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const dataBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
         saveAs(dataBlob, `approved_transfers_${new Date().getTime()}.xlsx`);
+    }
+
+    openTransferWizard() {
+        this.showTransferWizard = true;
+        this.loadStores();
+        this.loadProducts();
+    }
+
+    loadStores() {
+        if (this.stores.length > 0) return;
+        this.inventoryService.getStores(0, 1000).subscribe({
+            next: (data) => {
+                this.stores = (data.content || data).map((s: any) => ({ name: s.name, id: s.id }));
+            }
+        });
+    }
+
+    loadProducts() {
+        if (this.products.length > 0) return;
+        this.inventoryService.getProducts(0, 1000).subscribe({
+            next: (data) => {
+                this.products = (data.content || data).map((p: any) => ({ name: p.name, id: p.id, codeBarre: p.codeBarre }));
+            }
+        });
+    }
+
+    createTransfer() {
+        if (!this.newSuggestion.fromStoreId || !this.newSuggestion.toStoreId || !this.newSuggestion.productId) {
+            return;
+        }
+
+        this.loadingCreation = true;
+        this.transferService.createSuggestion(this.newSuggestion).subscribe({
+            next: () => {
+                this.loadingCreation = false;
+                this.showTransferWizard = false;
+                this.loadSuggestions();
+                // Reset form
+                this.newSuggestion = {
+                    fromStoreId: 0,
+                    toStoreId: 0,
+                    productId: 0,
+                    quantity: 1,
+                    priority: 'medium',
+                    reason: '',
+                    confidence: 100
+                };
+            },
+            error: (err) => {
+                console.error(err);
+                this.loadingCreation = false;
+            }
+        });
     }
 }

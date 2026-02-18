@@ -47,12 +47,22 @@ export interface TransferItem {
     unitCost?: number;
 }
 
-export type TransferStatus = 
-    | 'proposed' 
-    | 'approved' 
-    | 'picked' 
-    | 'in_transit' 
-    | 'received' 
+export interface CreateTransferSuggestionRequest {
+    fromStoreId: number;
+    toStoreId: number;
+    productId: number;
+    quantity: number;
+    priority: string;
+    reason: string;
+    confidence: number;
+}
+
+export type TransferStatus =
+    | 'proposed'
+    | 'approved'
+    | 'picked'
+    | 'in_transit'
+    | 'received'
     | 'closed'
     | 'rejected';
 

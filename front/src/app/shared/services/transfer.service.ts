@@ -75,7 +75,7 @@ export class TransferService {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('size', size.toString());
-        
+
         if (sort) {
             params = params.set('sort', sort);
         }
@@ -183,6 +183,22 @@ export class TransferService {
             }),
             catchError(error => {
                 console.error('Error rejecting suggestion:', error);
+                return throwError(() => error);
+            })
+        );
+    }
+
+    // Create a manual transfer suggestion
+    createSuggestion(request: any): Observable<TransferSuggestion> {
+        return this.http.post<ApiResponse<TransferSuggestion>>(`${this.apiUrl}${API_CONFIG.endpoints.transferSuggestions}`, request).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return this.mapSuggestion(response.data);
+                }
+                throw new Error(response.message || 'Failed to create suggestion');
+            }),
+            catchError(error => {
+                console.error('Error creating suggestion:', error);
                 return throwError(() => error);
             })
         );
