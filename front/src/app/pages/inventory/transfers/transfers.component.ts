@@ -12,7 +12,7 @@ import { SelectModule } from 'primeng/select';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
 import { TransferService } from '../../../shared/services/transfer.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
-import { TransferSuggestion, Transfer, CreateTransferSuggestionRequest } from '../../../shared/models/inventory.models';
+import { TransferSuggestion, Transfer, CreateTransferSuggestionRequest, StatusPillType } from '../../../shared/models/inventory.models';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -563,7 +563,7 @@ export class TransfersComponent implements OnInit {
         });
     }
 
-    getTransferStatusType(status: string): 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' | 'overstock' | 'rejected' {
+    getTransferStatusType(status: string): StatusPillType {
         if (status === 'received' || status === 'closed') return 'ok';
         if (status === 'approved') return 'overstock';
         if (status === 'picked' || status === 'in_transit') return 'medium';

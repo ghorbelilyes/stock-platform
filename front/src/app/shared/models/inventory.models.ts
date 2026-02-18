@@ -25,6 +25,8 @@ export interface Sale {
     price: number;
 }
 
+export type StatusPillType = 'ok' | 'low' | 'out' | 'high' | 'medium' | 'low-priority' | 'overstock' | 'rejected';
+
 export interface TransferSuggestion {
     id: string;
     fromStoreId: string;

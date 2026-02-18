@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { StatusPillType } from '../../models/inventory.models';
 
 @Component({
     selector: 'app-status-pill',
@@ -12,7 +13,7 @@ import { CommonModule } from '@angular/common';
     `
 })
 export class StatusPillComponent {
-    @Input() status!: 'ok' | 'low' | 'out' | 'overstock' | 'high' | 'medium' | 'low-priority' | 'rejected';
+    @Input() status!: StatusPillType;
     @Input() label?: string;
 
     getLabel(): string {
