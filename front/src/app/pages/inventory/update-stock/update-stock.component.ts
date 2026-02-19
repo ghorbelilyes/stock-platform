@@ -33,14 +33,14 @@ interface StockConsistencyValidationResult {
     selector: 'app-update-stock',
     standalone: true,
     imports: [
-        CommonModule, 
-        TranslateModule, 
-        ButtonModule, 
-        FileUploadModule, 
-        TagModule, 
-        DialogModule, 
-        SelectModule, 
-        FormsModule, 
+        CommonModule,
+        TranslateModule,
+        ButtonModule,
+        FileUploadModule,
+        TagModule,
+        DialogModule,
+        SelectModule,
+        FormsModule,
         MessageModule,
         CardModule,
         ProgressSpinnerModule
@@ -253,17 +253,18 @@ interface StockConsistencyValidationResult {
                         }
 
                         @if (validationResult.errors && validationResult.errors.length > 0) {
-                            <div class="validation-errors">
-                                <h4 class="text-surface-900 dark:text-surface-0 font-semibold mb-2">
+                            <div class="validation-errors mt-4">
+                                <h4 class="text-surface-900 dark:text-surface-0 font-semibold mb-3 flex items-center gap-2">
+                                    <i class="pi pi-exclamation-triangle text-red-500"></i>
                                     {{ 'updateStock.issuesFound' | translate }} ({{ validationResult.errors.length }}):
                                 </h4>
-                                <ul class="list-none p-0 m-0">
+                                <div class="flex flex-col gap-3">
                                     @for (error of validationResult.errors; track $index) {
-                                        <li class="mb-2">
-                                            <p-message severity="error" [text]="error"></p-message>
-                                        </li>
+                                        <div class="p-3 border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20 rounded shadow-sm">
+                                            <p class="text-sm font-medium text-red-700 dark:text-red-300 m-0">{{ error }}</p>
+                                        </div>
                                     }
-                                </ul>
+                                </div>
                             </div>
                         }
 
@@ -632,18 +633,18 @@ export class UpdateStockComponent implements OnInit {
             this.fileHeaders = await this.inventoryService.parseCSVHeaders(file);
             this.pendingFileType = fileType;
             this.currentFile = file;
-            
+
             // Get required columns
             this.inventoryService.getRequiredColumns(fileType).subscribe({
                 next: (requiredColumns) => {
                     // Create mapping config with auto-matching
                     const mappings: ColumnMapping[] = requiredColumns.map(backendCol => {
                         // Try to find matching file column (case-insensitive, with variations)
-                        const matchedFileCol = this.fileHeaders.find(fh => 
+                        const matchedFileCol = this.fileHeaders.find(fh =>
                             fh.toLowerCase() === backendCol.toLowerCase() ||
                             fh.toLowerCase().replace(/[_\s]/g, '') === backendCol.toLowerCase().replace(/[_\s]/g, '')
                         ) || '';
-                        
+
                         return {
                             fileColumn: matchedFileCol || '',
                             backendColumn: backendCol,
@@ -662,11 +663,11 @@ export class UpdateStockComponent implements OnInit {
                     // Fallback to local constant
                     const backendColumns = [...BACKEND_COLUMNS[fileType]];
                     const mappings: ColumnMapping[] = backendColumns.map(backendCol => {
-                        const matchedFileCol = this.fileHeaders.find(fh => 
+                        const matchedFileCol = this.fileHeaders.find(fh =>
                             fh.toLowerCase() === backendCol.toLowerCase() ||
                             fh.toLowerCase().replace(/[_\s]/g, '') === backendCol.toLowerCase().replace(/[_\s]/g, '')
                         ) || '';
-                        
+
                         return {
                             fileColumn: matchedFileCol || '',
                             backendColumn: backendCol,
@@ -792,7 +793,7 @@ export class UpdateStockComponent implements OnInit {
                     (result) => {
                         this.uploadResults.stock = {
                             success: result.valid || false,
-                            message: result.valid 
+                            message: result.valid
                                 ? `Stock file uploaded successfully. ${result.rowsInserted} rows inserted.`
                                 : `Stock file upload failed. ${result.rowsFailed} rows failed.`,
                             errors: result.errors || []
@@ -821,7 +822,7 @@ export class UpdateStockComponent implements OnInit {
                     (result) => {
                         this.uploadResults.sales = {
                             success: result.valid || false,
-                            message: result.valid 
+                            message: result.valid
                                 ? `Sales file uploaded successfully. ${result.rowsInserted} rows inserted.`
                                 : `Sales file upload failed. ${result.rowsFailed} rows failed.`,
                             errors: result.errors || []
@@ -850,7 +851,7 @@ export class UpdateStockComponent implements OnInit {
                     (result) => {
                         this.uploadResults.transfer = {
                             success: result.valid || false,
-                            message: result.valid 
+                            message: result.valid
                                 ? `Transfer file uploaded successfully. ${result.rowsInserted} rows inserted.`
                                 : `Transfer file upload failed. ${result.rowsFailed} rows failed.`,
                             errors: result.errors || []

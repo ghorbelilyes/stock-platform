@@ -66,7 +66,7 @@ interface StockConsistencyValidationResult {
 export class InventoryDataService {
     private http = inject(HttpClient);
     private apiUrl = API_CONFIG.baseUrl;
-    
+
     private uploadedFiles: {
         stores?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
         stocks?: { name: string; uploadedAt: string; valid: boolean; errors?: string[]; columnMapping?: FileMappingConfig };
@@ -77,7 +77,7 @@ export class InventoryDataService {
 
     // Get all stores with pagination, sorting, filtering, and search
     getStores(
-        page: number = 0, 
+        page: number = 0,
         size: number = 20,
         sort?: string,
         search?: string,
@@ -127,7 +127,7 @@ export class InventoryDataService {
 
     // Get stocks with pagination, sorting, filtering, and search
     getStocks(
-        page: number = 0, 
+        page: number = 0,
         size: number = 20,
         sort?: string,
         search?: string,
@@ -192,7 +192,7 @@ export class InventoryDataService {
 
     // Get sales with pagination, sorting, filtering, and search
     getSales(
-        page: number = 0, 
+        page: number = 0,
         size: number = 20,
         sort?: string,
         search?: string,
@@ -246,7 +246,7 @@ export class InventoryDataService {
 
     // Get all products with pagination, sorting, filtering, and search
     getProducts(
-        page: number = 0, 
+        page: number = 0,
         size: number = 20,
         sort?: string,
         search?: string,
@@ -296,7 +296,7 @@ export class InventoryDataService {
 
     // Get all categories with pagination, sorting, filtering, and search
     getCategories(
-        page: number = 0, 
+        page: number = 0,
         size: number = 20,
         sort?: string,
         search?: string,
@@ -508,7 +508,7 @@ export class InventoryDataService {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('fileType', fileType.toUpperCase());
-        
+
         // Convert fileType in columnMapping to uppercase for backend enum
         const columnMappingForBackend = {
             ...columnMapping,
@@ -541,7 +541,7 @@ export class InventoryDataService {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('fileType', fileType.toUpperCase());
-        
+
         // Convert fileType in columnMapping to uppercase for backend enum
         const columnMappingForBackend = {
             ...columnMapping,
@@ -579,7 +579,7 @@ export class InventoryDataService {
         formData.append('stockFile', stockFile);
         formData.append('salesFile', salesFile);
         formData.append('transferFile', transferFile);
-        
+
         // Convert fileType in columnMapping to uppercase for backend enum
         const stockMappingForBackend = {
             ...stockMapping,
@@ -593,7 +593,7 @@ export class InventoryDataService {
             ...transferMapping,
             fileType: transferMapping.fileType.toUpperCase()
         };
-        
+
         formData.append('stockMapping', JSON.stringify(stockMappingForBackend));
         formData.append('salesMapping', JSON.stringify(salesMappingForBackend));
         formData.append('transferMapping', JSON.stringify(transferMappingForBackend));
@@ -606,14 +606,20 @@ export class InventoryDataService {
                 if (response.success && response.data) {
                     return response.data;
                 }
-                return { 
-                    valid: false, 
+                return {
+                    valid: false,
                     errors: [response.error?.message || 'Validation failed'],
                     message: 'Validation failed'
                 };
             }),
             catchError(error => {
                 console.error('Error validating stock consistency:', error);
+
+                // If it's a 400 error with validation data, return that data instead of throwing
+                if (error.status === 400 && error.error?.data) {
+                    return of(error.error.data as StockConsistencyValidationResult);
+                }
+
                 return throwError(() => ({
                     valid: false,
                     errors: [error.error?.error?.message || 'Validation error occurred'],
@@ -635,14 +641,20 @@ export class InventoryDataService {
                 if (response.success && response.data) {
                     return response.data;
                 }
-                return { 
-                    valid: false, 
+                return {
+                    valid: false,
                     errors: [response.error?.message || 'Check failed'],
                     message: 'Database consistency check failed'
                 };
             }),
             catchError(error => {
                 console.error('Error checking database consistency:', error);
+
+                // If it's a 400 error with validation data, return that data instead of throwing
+                if (error.status === 400 && error.error?.data) {
+                    return of(error.error.data as StockConsistencyValidationResult);
+                }
+
                 return throwError(() => ({
                     valid: false,
                     errors: [error.error?.error?.message || 'Check error occurred'],
@@ -654,11 +666,11 @@ export class InventoryDataService {
 
     // Save column mapping configuration (local storage)
     saveColumnMapping(fileType: 'stock' | 'sales' | 'transfer' | 'store' | 'product', mapping: FileMappingConfig): void {
-        const fileKey = fileType === 'stock' ? 'stocks' : 
-                       fileType === 'sales' ? 'sales' : 
-                       fileType === 'transfer' ? 'transfers' : 
-                       fileType === 'product' ? 'products' :
-                       'stores';
+        const fileKey = fileType === 'stock' ? 'stocks' :
+            fileType === 'sales' ? 'sales' :
+                fileType === 'transfer' ? 'transfers' :
+                    fileType === 'product' ? 'products' :
+                        'stores';
         if (this.uploadedFiles[fileKey]) {
             this.uploadedFiles[fileKey]!.columnMapping = mapping;
         }

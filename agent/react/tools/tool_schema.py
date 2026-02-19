@@ -10,19 +10,19 @@ class SearchEmbeddingsInput(BaseModel):
     runtime: Annotated[Any, InjectedToolArg]
 
 class SearchWebInput(BaseModel):
-    query: str = Field(..., description="النص / السؤال الذي سيتم البحث عنه في الويب.")
-    max_results: int = Field(5, description="أقصى عدد من النتائج المراد استرجاعها.")
+    query: str = Field(..., description="The text / question to search for on the web.")
+    max_results: int = Field(5, description="Maximum number of results to retrieve.")
     region: str | None = Field(
         default=None,
-        description="منطقة البحث مثل 'wt-wt', 'us-en'، اتركها فارغة للوضع الافتراضي."
+        description="Search region like 'wt-wt', 'us-en', leave it empty for default."
     )
     safesearch: str = Field(
         default="moderate",
-        description="مستوى SafeSearch: on, moderate, off."
+        description="SafeSearch level: on, moderate, off."
     )
     timelimit: str | None = Field(
         default=None,
-        description="المدّة الزمنية: d (يوم)، w (أسبوع)، m (شهر)، y (سنة)، أو None."
+        description="Time limit: d (day), w (week), m (month), y (year), or None."
     )
 
 class GetStoresInput(BaseModel):
