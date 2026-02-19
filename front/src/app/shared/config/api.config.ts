@@ -1,6 +1,6 @@
 // Detect if running locally (development) or in Docker (production)
-const isLocalDev = window.location.origin.includes('localhost:4200') || 
-                   window.location.origin.includes('127.0.0.1:4200');
+const isLocalDev = window.location.origin.includes('localhost:4200') ||
+    window.location.origin.includes('127.0.0.1:4200');
 
 export const API_CONFIG = {
     // Use absolute URL for local dev, relative path for Docker (nginx proxy)
@@ -11,9 +11,10 @@ export const API_CONFIG = {
         requiredColumns: '/files/required-columns',
         validateFile: '/files/validate',
         uploadFile: '/files/upload',
+        bulkUpload: '/files/bulk-upload',
         validateStockConsistency: '/files/validate-consistency',
         checkDatabaseConsistency: '/files/check-database-consistency',
-        
+
         // Data retrieval
         stores: '/stores',
         products: '/products',

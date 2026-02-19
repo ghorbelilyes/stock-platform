@@ -282,21 +282,38 @@ public class StockConsistencyValidationService {
         logger.info("Existing in_transit transfers (already reflected in DB stock): {}",
                 existingInTransitSentByStoreProduct);
 
-        // Validate each stock entry
-        for (Map.Entry<String, Integer> stockEntry : stockData.entrySet()) {
-            String[] parts = stockEntry.getKey().split("-");
+        // Validate each affected stock entry
+        // We must check every store-product combination that appears in ANY of the
+        // files
+        Set<String> allAffectedKeys = new HashSet<>(stockData.keySet());
+        allAffectedKeys.addAll(newSalesByStoreProduct.keySet());
+        allAffectedKeys.addAll(netTransfersReceivedByStoreProduct.keySet());
+        allAffectedKeys.addAll(netTransfersSentByStoreProduct.keySet());
+        allAffectedKeys.addAll(existingInTransitSentByStoreProduct.keySet());
+
+        logger.info("Validating {} unique store-product combinations", allAffectedKeys.size());
+
+        for (String key : allAffectedKeys) {
+            String[] parts = key.split("-");
             if (parts.length != 2) {
-                errors.add("Invalid stock key format: " + stockEntry.getKey());
+                errors.add("Invalid stock key format: " + key);
                 continue;
             }
 
             Long storeId = Long.parseLong(parts[0]);
             Long productId = Long.parseLong(parts[1]);
-            Integer newStockQuantity = stockEntry.getValue();
 
             // Get previous stock from DB
             Stock previousStock = stockRepository.findByIdStoreAndIdProduct(storeId, productId);
             Integer dbStockQuantity = (previousStock != null) ? previousStock.getQuantity() : 0;
+
+            // Get "new" stock quantity. If not in the uploaded file, it remains as DB
+            // quantity
+            Integer newStockQuantity = stockData.get(key);
+            boolean missingInFile = (newStockQuantity == null);
+            if (missingInFile) {
+                newStockQuantity = dbStockQuantity;
+            }
 
             // Get NEW sales for this store-product (only new, not duplicates)
             Integer newSalesQuantity = newSalesByStoreProduct.getOrDefault(storeId + "-" + productId, 0);
@@ -311,81 +328,49 @@ public class StockConsistencyValidationService {
             Integer existingInTransitSent = existingInTransitSentByStoreProduct.getOrDefault(storeId + "-" + productId,
                     0);
 
-            // Calculate the "true" previous stock
-            // If there's an in_transit transfer, the stock should have been reduced
-            // But if the DB stock doesn't reflect this (DB inconsistency), we need to
-            // account for it
-            // For now, we assume DB stock should reflect in_transit reductions, but if it
-            // doesn't,
-            // we need to adjust: truePreviousStock = DB stock - existingInTransitSent (if
-            // DB is wrong)
-            // OR: truePreviousStock = DB stock (if DB is correct and already reduced)
-
-            // The CSV stock represents the desired state AFTER applying all changes
-            // If CSV shows 75 and DB shows 100, and there's an in_transit transfer of 25,
-            // it means the DB stock wasn't reduced when the transfer went to in_transit
-            // So we need to use: truePreviousStock = DB stock - existingInTransitSent
-
-            // However, if the transfer is changing from in_transit to received, the stock
-            // reduction
-            // should have already happened. So we check: if the transfer is being changed
-            // FROM in_transit,
-            // then the DB stock should already be reduced. If CSV matches the reduced
-            // amount, DB is wrong.
-
-            // For validation, we calculate expected stock based on:
-            // - DB stock (which may or may not reflect in_transit reductions)
-            // - Net changes from new/status-changed transfers
-            // - New sales
-
-            // If there's an existing in_transit transfer that's NOT being changed, and DB
-            // stock is higher than CSV,
-            // it means DB stock wasn't reduced. We should use CSV as the baseline for that
-            // transfer.
-            // But for validation, we want to check if: CSV = DB + netChanges
-
-            // Actually, the simplest approach: if DB stock is 100 but should be 75 (due to
-            // in_transit),
-            // and CSV is 75, then CSV is correct. The validation should account for this.
-
             // Calculate expected stock
             // Stock(new) = Stock(DB) + Net Transfers(received) - Net Transfers(sent) - New
             // Sales
-            // BUT: If DB stock doesn't reflect existing in_transit reductions, we need to
-            // adjust
             Integer expectedStock = dbStockQuantity + netTransfersReceived - netTransfersSent - newSalesQuantity;
 
-            // If there's an existing in_transit transfer that's not being changed, and the
-            // expected stock
-            // doesn't match CSV, it might be because DB stock wasn't reduced when transfer
-            // went to in_transit.
-            // In this case, the CSV is showing the "correct" stock (already reduced), so we
-            // should validate against that.
-
-            // Special case: If existingInTransitSent > 0 and expectedStock > CSV, and the
-            // difference equals existingInTransitSent,
-            // it means DB stock wasn't reduced. The CSV is correct, so we adjust
+            // Special case: If existingInTransitSent > 0 and expectedStock >
+            // newStockQuantity,
+            // and the difference equals existingInTransitSent, it means DB stock wasn't
+            // reduced.
+            // The CSV is correct (or DB is correct but missing from CSV), so we adjust
             // expectedStock.
             if (existingInTransitSent > 0 && expectedStock > newStockQuantity &&
                     (expectedStock - newStockQuantity) == existingInTransitSent) {
-                // DB stock wasn't reduced when transfer went to in_transit
-                // CSV is correct, so adjust expected stock
                 expectedStock = newStockQuantity;
                 logger.debug(
-                        "Adjusting expected stock: DB stock wasn't reduced for in_transit transfer. Using CSV value as baseline.");
+                        "Adjusting expected stock for Store {}, Product {}: DB stock wasn't reduced for in_transit transfer.",
+                        storeId, productId);
             }
 
             logger.debug(
-                    "Store {}, Product {}: DB={}, netReceived={}, netSent={}, newSales={}, existingInTransitSent={}, expected={}, CSV={}",
+                    "Store {}, Product {}: DB={}, netReceived={}, netSent={}, newSales={}, existingInTransitSent={}, expected={}, CSV={}{}",
                     storeId, productId, dbStockQuantity, netTransfersReceived, netTransfersSent, newSalesQuantity,
-                    existingInTransitSent, expectedStock, newStockQuantity);
+                    existingInTransitSent, expectedStock,
+                    missingInFile ? "N/A (using DB: " : "",
+                    newStockQuantity + (missingInFile ? ")" : ""));
 
             // Validate
             if (!newStockQuantity.equals(expectedStock)) {
-                errors.add(String.format(
-                        "Stock inconsistency for Store %d, Product %d: Expected %d (previous: %d + received: %d - sent: %d - new sales: %d), but got %d",
-                        storeId, productId, expectedStock, dbStockQuantity, netTransfersReceived, netTransfersSent,
-                        newSalesQuantity, newStockQuantity));
+                if (missingInFile) {
+                    errors.add(String.format(
+                            "Stock inconsistency for Store %d, Product %d: This product is missing from the Stock file, "
+                                    +
+                                    "but has pending transactions. Current DB stock: %d. Expected stock after transactions: %d "
+                                    +
+                                    "(%d + received: %d - sent: %d - sales: %d). Please include this product in your stock file with the correct quantity.",
+                            storeId, productId, dbStockQuantity, expectedStock, dbStockQuantity, netTransfersReceived,
+                            netTransfersSent, newSalesQuantity));
+                } else {
+                    errors.add(String.format(
+                            "Stock inconsistency for Store %d, Product %d: Expected %d (previous: %d + received: %d - sent: %d - new sales: %d), but got %d",
+                            storeId, productId, expectedStock, dbStockQuantity, netTransfersReceived, netTransfersSent,
+                            newSalesQuantity, newStockQuantity));
+                }
             }
         }
 

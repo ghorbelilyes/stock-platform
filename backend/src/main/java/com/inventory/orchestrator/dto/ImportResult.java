@@ -13,13 +13,15 @@ public class ImportResult {
     private Boolean valid;
     private Integer rowsProcessed;
     private Integer rowsInserted;
+    private Integer rowsUpdated;
     private Integer rowsFailed;
     private List<String> errors = new ArrayList<>();
-    
+
     public ImportResult() {
     }
-    
-    public ImportResult(Long fileUploadId, String fileName, FileType fileType, LocalDateTime uploadedAt, Boolean valid, Integer rowsProcessed, Integer rowsInserted, Integer rowsFailed, List<String> errors) {
+
+    public ImportResult(Long fileUploadId, String fileName, FileType fileType, LocalDateTime uploadedAt, Boolean valid,
+            Integer rowsProcessed, Integer rowsInserted, Integer rowsUpdated, Integer rowsFailed, List<String> errors) {
         this.fileUploadId = fileUploadId;
         this.fileName = fileName;
         this.fileType = fileType;
@@ -27,78 +29,87 @@ public class ImportResult {
         this.valid = valid;
         this.rowsProcessed = rowsProcessed;
         this.rowsInserted = rowsInserted;
+        this.rowsUpdated = rowsUpdated;
         this.rowsFailed = rowsFailed;
         this.errors = errors != null ? errors : new ArrayList<>();
     }
-    
+
     public Long getFileUploadId() {
         return fileUploadId;
     }
-    
+
     public void setFileUploadId(Long fileUploadId) {
         this.fileUploadId = fileUploadId;
     }
-    
+
     public String getFileName() {
         return fileName;
     }
-    
+
     public void setFileName(String fileName) {
         this.fileName = fileName;
     }
-    
+
     public FileType getFileType() {
         return fileType;
     }
-    
+
     public void setFileType(FileType fileType) {
         this.fileType = fileType;
     }
-    
+
     public LocalDateTime getUploadedAt() {
         return uploadedAt;
     }
-    
+
     public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
-    
+
     public Boolean getValid() {
         return valid;
     }
-    
+
     public void setValid(Boolean valid) {
         this.valid = valid;
     }
-    
+
     public Integer getRowsProcessed() {
         return rowsProcessed;
     }
-    
+
     public void setRowsProcessed(Integer rowsProcessed) {
         this.rowsProcessed = rowsProcessed;
     }
-    
+
     public Integer getRowsInserted() {
         return rowsInserted;
     }
-    
+
     public void setRowsInserted(Integer rowsInserted) {
         this.rowsInserted = rowsInserted;
     }
-    
+
+    public Integer getRowsUpdated() {
+        return rowsUpdated;
+    }
+
+    public void setRowsUpdated(Integer rowsUpdated) {
+        this.rowsUpdated = rowsUpdated;
+    }
+
     public Integer getRowsFailed() {
         return rowsFailed;
     }
-    
+
     public void setRowsFailed(Integer rowsFailed) {
         this.rowsFailed = rowsFailed;
     }
-    
+
     public List<String> getErrors() {
         return errors;
     }
-    
+
     public void setErrors(List<String> errors) {
         this.errors = errors != null ? errors : new ArrayList<>();
     }

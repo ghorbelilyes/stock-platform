@@ -60,6 +60,18 @@ interface StockConsistencyValidationResult {
     updateTransferDetails?: string[];
 }
 
+export interface BulkImportResult {
+    success: boolean;
+    message: string;
+    timestamp: string;
+    results: {
+        stock?: ImportResult;
+        sales?: ImportResult;
+        transfer?: ImportResult;
+    };
+    globalErrors: string[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -674,5 +686,58 @@ export class InventoryDataService {
         if (this.uploadedFiles[fileKey]) {
             this.uploadedFiles[fileKey]!.columnMapping = mapping;
         }
+    }
+
+    // Bulk upload multiple files
+    bulkUpload(
+        stockFile: File,
+        salesFile: File,
+        transferFile: File,
+        stockMapping: FileMappingConfig,
+        salesMapping: FileMappingConfig,
+        transferMapping: FileMappingConfig
+    ): Observable<BulkImportResult> {
+        const formData = new FormData();
+        formData.append('stockFile', stockFile);
+        formData.append('salesFile', salesFile);
+        formData.append('transferFile', transferFile);
+
+        // Convert fileType in columnMapping to uppercase for backend enum
+        const stockMappingForBackend = {
+            ...stockMapping,
+            fileType: stockMapping.fileType.toUpperCase()
+        };
+        const salesMappingForBackend = {
+            ...salesMapping,
+            fileType: salesMapping.fileType.toUpperCase()
+        };
+        const transferMappingForBackend = {
+            ...transferMapping,
+            fileType: transferMapping.fileType.toUpperCase()
+        };
+
+        formData.append('stockMapping', JSON.stringify(stockMappingForBackend));
+        formData.append('salesMapping', JSON.stringify(salesMappingForBackend));
+        formData.append('transferMapping', JSON.stringify(transferMappingForBackend));
+
+        return this.http.post<ApiResponse<BulkImportResult>>(
+            `${this.apiUrl}${API_CONFIG.endpoints.bulkUpload}`,
+            formData
+        ).pipe(
+            map(response => {
+                if (response.success && response.data) {
+                    return response.data;
+                }
+                throw new Error(response.error?.message || 'Bulk upload failed');
+            }),
+            catchError(error => {
+                console.error('Error in bulk upload:', error);
+                // If it's a 400 error with bulk result data, return that data instead of throwing
+                if (error.status === 400 && error.error?.data) {
+                    return of(error.error.data as BulkImportResult);
+                }
+                return throwError(() => error);
+            })
+        );
     }
 }

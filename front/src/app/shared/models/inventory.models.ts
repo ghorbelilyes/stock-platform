@@ -104,8 +104,8 @@ export interface FileMappingConfig {
 // Backend column definitions
 export const BACKEND_COLUMNS = {
     stock: ['id_store', 'id_product', 'quantity'],
-    sales: ['id_store', 'id_product', 'quantity'],
-    transfer: ['date', 'id_store_sent', 'id_store_receive', 'id_product', 'reason', 'quantity'],
-    store: ['serial_number', 'name', 'city', 'type'],
-    product: ['code_barre', 'name', 'description']
+    sales: ['id_store', 'id_product', 'quantity', 'range_date'],
+    transfer: ['date', 'id_store_sent', 'id_store_receive', 'id_product', 'reason', 'quantity', 'status'],
+    store: ['id', 'serial_number', 'name', 'city', 'type'],
+    product: ['id', 'code_barre', 'name', 'description']
 } as const;

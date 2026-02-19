@@ -11,7 +11,7 @@ import { MessageModule } from 'primeng/message';
 import { CardModule } from 'primeng/card';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { firstValueFrom } from 'rxjs';
-import { InventoryDataService } from '../../../shared/services/inventory-data.service';
+import { InventoryDataService, BulkImportResult } from '../../../shared/services/inventory-data.service';
 import { ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../../../shared/models/inventory.models';
 
 interface StockConsistencyValidationResult {
@@ -777,7 +777,59 @@ export class UpdateStockComponent implements OnInit {
         this.uploading = true;
         this.uploadResults = {};
 
-        // Upload files sequentially
+        // If all 3 core files are present, use bulk upload for atomicity
+        if (this.files.stock && this.files.sales && this.files.transfer) {
+            this.inventoryService.bulkUpload(
+                this.files.stock.file,
+                this.files.sales.file,
+                this.files.transfer.file,
+                this.files.stock.mapping!,
+                this.files.sales.mapping!,
+                this.files.transfer.mapping!
+            ).subscribe({
+                next: (result) => {
+                    this.uploading = false;
+                    if (result.success) {
+                        // Map results to individual file displays
+                        if (result.results.stock) {
+                            this.uploadResults.stock = {
+                                success: true,
+                                message: `Stock file uploaded successfully. ${result.results.stock.rowsInserted} rows inserted.`,
+                                errors: []
+                            };
+                        }
+                        if (result.results.sales) {
+                            this.uploadResults.sales = {
+                                success: true,
+                                message: `Sales file uploaded successfully. ${result.results.sales.rowsInserted} rows inserted.`,
+                                errors: []
+                            };
+                        }
+                        if (result.results.transfer) {
+                            this.uploadResults.transfer = {
+                                success: true,
+                                message: `Transfer file uploaded successfully. ${result.results.transfer.rowsInserted} rows inserted.`,
+                                errors: []
+                            };
+                        }
+                    } else {
+                        // Handle global or specific errors
+                        const firstError = result.globalErrors?.[0] || result.message;
+                        this.uploadResults.stock = { success: false, message: 'Bulk upload failed', errors: result.globalErrors };
+                        this.uploadResults.sales = { success: false, message: 'Bulk upload failed', errors: [] };
+                        this.uploadResults.transfer = { success: false, message: 'Bulk upload failed', errors: [] };
+                    }
+                },
+                error: (error) => {
+                    this.uploading = false;
+                    const errorMsg = error.error?.error?.message || error.message || 'Unknown error';
+                    this.uploadResults.stock = { success: false, message: 'Bulk upload failed', errors: [errorMsg] };
+                }
+            });
+            return;
+        }
+
+        // Fallback for sequential upload if not all 3 files are present (though canValidate currently requires all 3)
         const uploadPromises: Promise<any>[] = [];
 
         // Upload stock file
