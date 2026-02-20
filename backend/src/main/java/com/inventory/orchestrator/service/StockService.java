@@ -24,11 +24,14 @@ public class StockService {
     private final TransferRepository transferRepository;
     private final SalesRepository salesRepository;
 
+    private final SettingsService settingsService;
+
     public StockService(StockRepository stockRepository, TransferRepository transferRepository,
-            SalesRepository salesRepository) {
+            SalesRepository salesRepository, SettingsService settingsService) {
         this.stockRepository = stockRepository;
         this.transferRepository = transferRepository;
         this.salesRepository = salesRepository;
+        this.settingsService = settingsService;
     }
 
     public Page<StockView> getStocksWithTransfers(
@@ -64,10 +67,22 @@ public class StockService {
     private void enrichData(List<StockView> content) {
         if (content == null || content.isEmpty())
             return;
+
+        // Determine lookback days once
+        int lookbackDays = 30; // default
+        if (settingsService != null) {
+            String enabled = settingsService.getString("sales.lookback.enabled");
+            if ("true".equalsIgnoreCase(enabled)) {
+                lookbackDays = settingsService.getInt("sales.lookback.days");
+            }
+        }
+        if (lookbackDays <= 0)
+            lookbackDays = 30;
+
         Map<String, Integer> incoming = buildIncomingMap();
         Map<String, Integer> outToTransit = buildOutToTransitMap();
         Map<String, Integer> quantityForTransfer = buildQuantityForTransferMap();
-        Map<String, Integer> salesMap = buildSalesMap();
+        Map<String, Integer> salesMap = buildSalesMap(lookbackDays);
 
         for (StockView row : content) {
             String k = key(row.getIdStore(), row.getIdProduct());
@@ -77,9 +92,10 @@ public class StockService {
 
             // Sales metrics
             int sold = salesMap.getOrDefault(k, 0);
-            row.setSoldLast30Days(sold);
+            row.setSoldLast30Days(sold); // Legacy field, keeping for compatibility
+            row.setSoldLastNDays(sold); // New field
 
-            double avg = sold / 30.0;
+            double avg = (double) sold / lookbackDays;
             // Round to 2 decimals
             avg = Math.round(avg * 100.0) / 100.0;
             row.setAvgDailySales(avg);
@@ -94,25 +110,14 @@ public class StockService {
         }
     }
 
-    private Map<String, Integer> buildSalesMap() {
+    private Map<String, Integer> buildSalesMap(int lookbackDays) {
         Map<String, Integer> map = new HashMap<>();
         try {
             LocalDateTime end = LocalDateTime.now();
-            LocalDateTime start = end.minusDays(30);
+            LocalDateTime start = end.minusDays(lookbackDays);
 
-            // Check if we have recent sales
+            // Strictly respect the lookback window. If no sales, rows will be empty.
             List<Object[]> rows = salesRepository.sumSalesByStoreAndProductBetween(start, end);
-
-            // If no recent sales, check if we have ANY sales and adjust the window
-            if (rows.isEmpty()) {
-                LocalDateTime maxDate = salesRepository.findMaxDate();
-                if (maxDate != null && maxDate.isBefore(start)) {
-                    // Use the latest data we have as the anchor
-                    end = maxDate;
-                    start = end.minusDays(30);
-                    rows = salesRepository.sumSalesByStoreAndProductBetween(start, end);
-                }
-            }
 
             for (Object[] row : rows) {
                 Long storeId = ((Number) row[0]).longValue();

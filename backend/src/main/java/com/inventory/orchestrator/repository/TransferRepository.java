@@ -75,7 +75,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
 
         @Query(value = "SELECT new com.inventory.orchestrator.dto.TransferView(" +
                         "t.id, t.date, t.idStoreSent, t.idStoreReceive, t.idProduct, t.reason, t.quantity, t.status, " +
-                        "stSent.name, stRec.name, p.name) " +
+                        "stSent.name, stRec.name, p.name, t.confidence, t.autoApproved) " +
                         "FROM Transfer t " +
                         "LEFT JOIN t.storeSent stSent " +
                         "LEFT JOIN t.storeReceive stRec " +
@@ -163,7 +163,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
          */
         @Query(value = "SELECT new com.inventory.orchestrator.dto.TransferView(" +
                         "t.id, t.date, t.idStoreSent, t.idStoreReceive, t.idProduct, t.reason, t.quantity, t.status, " +
-                        "stSent.name, stRec.name, p.name) " +
+                        "stSent.name, stRec.name, p.name, t.confidence, t.autoApproved) " +
                         "FROM Transfer t " +
                         "LEFT JOIN t.storeSent stSent " +
                         "LEFT JOIN t.storeReceive stRec " +

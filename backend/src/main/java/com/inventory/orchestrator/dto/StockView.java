@@ -23,9 +23,11 @@ public class StockView {
     private Integer quantityForTransfer;
     private StoreInfo store;
     private ProductInfo product;
-    /** Total quantity sold in the last 30 days */
+    /** Total quantity sold in the last 30 days - DEPRECATED, use soldLastNDays */
     private Integer soldLast30Days;
-    /** Average daily sales (soldLast30Days / 30) */
+    /** Total quantity sold in the last N days (configured in settings) */
+    private Integer soldLastNDays;
+    /** Average daily sales (soldLastNDays / N) */
     private Double avgDailySales;
     /** Days of cover (current stock / avgDailySales) */
     private Double daysOfCover;
@@ -160,6 +162,14 @@ public class StockView {
 
     public void setSoldLast30Days(Integer soldLast30Days) {
         this.soldLast30Days = soldLast30Days;
+    }
+
+    public Integer getSoldLastNDays() {
+        return soldLastNDays;
+    }
+
+    public void setSoldLastNDays(Integer soldLastNDays) {
+        this.soldLastNDays = soldLastNDays;
     }
 
     public Double getAvgDailySales() {

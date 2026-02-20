@@ -9,6 +9,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
+import { SettingsService } from '../../../shared/services/settings.service';
 
 type ViewMode = 'store' | 'product';
 
@@ -25,12 +26,13 @@ interface StockData {
     quantityForTransfer: number;
     /** Projected quantity after all transfers are completed: quantity - outToTransit + incomingQty */
     virtualQuantity: number;
-    /** Quantity sold in the last 30 days */
-    soldLast30Days: number;
-    /** Average daily sales (soldLast30Days / 30) */
+    /** Quantity sold in the configured lookback period */
+    soldLastNDays: number;
+    /** Average daily sales (soldLastNDays / lookbackDays) */
     avgDailySales: number;
     /** Days of cover (quantity / avgDailySales) */
     daysOfCover: number;
+    lookbackDays?: number;
     store?: {
         id: number;
         name: string;
@@ -144,6 +146,10 @@ interface StockData {
                                         class="w-full"
                                     />
                                 </span>
+                                <div class="flex items-center gap-2 px-3 py-2 surface-ground border-round" *ngIf="isLookbackEnabled">
+                                    <i class="pi pi-info-circle text-primary"></i>
+                                    <span class="text-xs text-600">Sales metrics based on last <strong>{{lookbackDays}} days</strong></span>
+                                </div>
                             </div>
                         </ng-template>
                         <ng-template pTemplate="header">
@@ -197,13 +203,14 @@ interface StockData {
                                 <th>
                                     <span [attr.title]="'stock.incomingTooltip' | translate">{{ 'stock.incoming' | translate }}</span>
                                 </th>
-                                <th>
-                                    <span [attr.title]="'stock.soldTooltip' | translate">{{ 'stock.soldLast30Days' | translate }}</span>
+                                <th *ngIf="isLookbackEnabled">
+                                    <span [attr.title]="'stock.soldTooltip' | translate" *ngIf="lookbackDays === 30">{{ 'stock.soldLast30Days' | translate }}</span>
+                                    <span [attr.title]="'stock.soldTooltip' | translate" *ngIf="lookbackDays !== 30">Sold (last {{lookbackDays}}d)</span>
                                 </th>
-                                <th>
+                                <th *ngIf="isLookbackEnabled">
                                     <span [attr.title]="'stock.avgDailyTooltip' | translate">{{ 'stock.avgDailySales' | translate }}</span>
                                 </th>
-                                <th>
+                                <th *ngIf="isLookbackEnabled">
                                     <span [attr.title]="'stock.daysOfCoverTooltip' | translate">{{ 'stock.daysOfCover' | translate }}</span>
                                 </th>
                                 <th>{{ 'common.status' | translate }}</th>
@@ -237,9 +244,9 @@ interface StockData {
                                     <span *ngIf="stock.incomingQty > 0" class="font-medium text-primary">+{{ stock.incomingQty }}</span>
                                     <span *ngIf="stock.incomingQty === 0" class="text-muted-color">0</span>
                                 </td>
-                                <td>{{ stock.soldLast30Days }}</td>
-                                <td>{{ stock.avgDailySales | number:'1.2-2' }}</td>
-                                <td>
+                                <td *ngIf="isLookbackEnabled">{{ stock.soldLastNDays }}</td>
+                                <td *ngIf="isLookbackEnabled">{{ stock.avgDailySales | number:'1.2-2' }}</td>
+                                <td *ngIf="isLookbackEnabled">
                                     <span [class.text-red-500]="stock.daysOfCover < 10" [class.font-bold]="stock.daysOfCover < 10">
                                         {{ stock.daysOfCover > 900 ? '∞' : (stock.daysOfCover | number:'1.1-1') }}
                                     </span>
@@ -378,6 +385,10 @@ interface StockData {
 export class StockComponent implements OnInit {
     private inventoryService = inject(InventoryDataService);
     private translateService = inject(TranslateService);
+    private settingsService = inject(SettingsService);
+
+    isLookbackEnabled = true;
+    lookbackDays = 30;
 
     stockData: StockData[] = [];
     loading = false;
@@ -406,6 +417,17 @@ export class StockComponent implements OnInit {
     ngOnInit() {
         this.viewModeOptions[0].label = this.translateService.instant('stock.viewByStore');
         this.viewModeOptions[1].label = this.translateService.instant('stock.viewByProduct');
+
+        // Load lookback settings
+        this.settingsService.getAllSettings().subscribe(response => {
+            if (response && response.success && response.data) {
+                const settings = response.data;
+                this.isLookbackEnabled = settings['sales.lookback.enabled'] === 'true';
+
+                const days = settings['sales.lookback.days'];
+                if (days) this.lookbackDays = parseInt(days);
+            }
+        });
     }
 
     /** Map API stock row (with incomingQty, outToTransit, quantityForTransfer) to StockData and compute virtualQuantity */
@@ -426,11 +448,12 @@ export class StockComponent implements OnInit {
             outToTransit,
             quantityForTransfer,
             virtualQuantity: quantity - quantityForTransfer + incomingQty, // Projected = On Hand - Reserved + Incoming
-            soldLast30Days: row.soldLast30Days ?? 0,
+            soldLastNDays: row.soldLastNDays ?? row.soldLast30Days ?? 0,
             avgDailySales: row.avgDailySales ?? 0,
             daysOfCover: row.daysOfCover ?? 0,
             store: row.store,
-            product: row.product
+            product: row.product,
+            lookbackDays: this.lookbackDays
         };
     }
 

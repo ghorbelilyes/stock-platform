@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { TooltipModule } from 'primeng/tooltip';
 import { InventoryDataService } from '../../../shared/services/inventory-data.service';
 import { TransferService } from '../../../shared/services/transfer.service';
 import { StatusPillComponent } from '../../../shared/components/status-pill/status-pill.component';
@@ -29,7 +30,7 @@ interface LazyLoadEvent {
 @Component({
     selector: 'app-transfers',
     standalone: true,
-    imports: [CommonModule, FormsModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule, TextareaModule, InputNumberModule, SelectModule],
+    imports: [CommonModule, FormsModule, TranslateModule, TableModule, ButtonModule, DialogModule, StatusPillComponent, InputTextModule, TextareaModule, InputNumberModule, SelectModule, TooltipModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12">
@@ -68,22 +69,28 @@ interface LazyLoadEvent {
                                     </app-status-pill>
                                 </td>
                                 <td>{{ suggestion.reason }}</td>
-                                <td>{{ suggestion.confidence }}%</td>
                                 <td>
-                                    <div class="flex gap-2">
-                                        <p-button 
-                                            [label]="'transfers.approve' | translate" 
-                                            icon="pi pi-check" 
-                                            size="small"
-                                            size="small"
-                                            [loading]="approvingId === suggestion.id"
-                                            (onClick)="approveTransfer(suggestion)"></p-button>
-                                        <p-button 
-                                            [label]="'transfers.dismiss' | translate" 
-                                            icon="pi pi-times" 
-                                            size="small"
-                                            severity="secondary"
-                                            (onClick)="openRejectModal(suggestion)"></p-button>
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ suggestion.confidence }}%</span>
+                                        <i class="pi pi-info-circle text-muted-color cursor-help" [pTooltip]="'transfers.confidenceExplanation' | translate"></i>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex gap-2 items-center">
+                                        <div class="flex gap-2">
+                                            <p-button 
+                                                [label]="'transfers.approve' | translate" 
+                                                icon="pi pi-check" 
+                                                size="small"
+                                                [loading]="approvingId === suggestion.id"
+                                                (onClick)="approveTransfer(suggestion)"></p-button>
+                                            <p-button 
+                                                [label]="'transfers.dismiss' | translate" 
+                                                icon="pi pi-times" 
+                                                size="small"
+                                                severity="secondary"
+                                                (onClick)="openRejectModal(suggestion)"></p-button>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -161,6 +168,8 @@ interface LazyLoadEvent {
                                     {{ 'transfers.notes' | translate }}
                                     <p-sortIcon [field]="'notes'"></p-sortIcon>
                                 </th>
+                                <th>{{ 'common.confidence' | translate }}</th>
+                                <th></th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-row>
@@ -178,6 +187,18 @@ interface LazyLoadEvent {
                                 <td>{{ row.items[0]?.productName || row.items[0]?.sku || 'N/A' }}</td>
                                 <td>{{ row.items[0]?.quantity || 0 }}</td>
                                 <td>{{ row.notes || 'N/A' }}</td>
+                                <td>
+                                    <span *ngIf="row.confidence" class="text-sm font-medium" [class.text-green-600]="row.confidence >= 90" [class.text-orange-600]="row.confidence < 90 && row.confidence >= 70">
+                                        {{ row.confidence }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    <app-status-pill 
+                                        *ngIf="row.autoApproved"
+                                        [status]="'ok'"
+                                        [label]="'transfers.autoApproved' | translate">
+                                    </app-status-pill>
+                                </td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">

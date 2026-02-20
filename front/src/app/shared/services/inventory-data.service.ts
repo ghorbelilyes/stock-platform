@@ -1,19 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, catchError, throwError, of } from 'rxjs';
-import { Store, Stock, Sale, ColumnMapping, FileMappingConfig, BACKEND_COLUMNS } from '../models/inventory.models';
+import { Store, Stock, Sale, ColumnMapping, FileMappingConfig, BACKEND_COLUMNS, ApiResponse } from '../models/inventory.models';
 import { API_CONFIG } from '../config/api.config';
-
-interface ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message: string;
-    error?: {
-        code: string;
-        message: string;
-        details: string[];
-    };
-}
 
 interface ParseHeadersResponse {
     headers: string[];

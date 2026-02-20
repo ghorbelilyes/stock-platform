@@ -7,7 +7,6 @@ import com.inventory.orchestrator.dto.RejectSuggestionRequest;
 import com.inventory.orchestrator.dto.TransferSuggestionDTO;
 import com.inventory.orchestrator.dto.TransferView;
 import com.inventory.orchestrator.entity.Transfer;
-import com.inventory.orchestrator.entity.TransferSuggestion;
 import com.inventory.orchestrator.repository.TransferRepository;
 import com.inventory.orchestrator.service.TransferSuggestionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,15 +97,17 @@ public class TransferController {
     }
 
     @PostMapping("/suggestions")
-    public ResponseEntity<ApiResponse<TransferSuggestion>> createSuggestion(
+    public ResponseEntity<ApiResponse<Object>> createSuggestion(
             @RequestBody CreateTransferSuggestionRequest request) {
         if (request == null) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_REQUEST", "Request body is required", List.of()));
         }
         try {
-            TransferSuggestion suggestion = suggestionService.createSuggestion(request);
-            return ResponseEntity.ok(ApiResponse.success(suggestion, "Transfer suggestion created successfully"));
+            Object result = suggestionService.createSuggestion(request);
+            String message = (result instanceof Transfer) ? "Transfer created (Auto-approved)"
+                    : "Transfer suggestion created successfully";
+            return ResponseEntity.ok(ApiResponse.success(result, message));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("INVALID_REQUEST", e.getMessage(), List.of()));

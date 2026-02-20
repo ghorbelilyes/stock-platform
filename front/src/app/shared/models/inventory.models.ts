@@ -80,6 +80,8 @@ export interface Transfer {
     etaDays: number;
     estimatedCost?: number;
     notes?: string;
+    confidence?: number;
+    autoApproved?: boolean;
 }
 
 export interface KPIData {
@@ -109,3 +111,14 @@ export const BACKEND_COLUMNS = {
     store: ['id', 'serial_number', 'name', 'city', 'type'],
     product: ['id', 'code_barre', 'name', 'description']
 } as const;
+
+export interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message: string;
+    error?: {
+        code: string;
+        message: string;
+        details: string[];
+    };
+}

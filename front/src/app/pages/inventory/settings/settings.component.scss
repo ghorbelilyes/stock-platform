@@ -1,0 +1,19 @@
+:host ::ng-deep {
+    .p-panel-header {
+        background-color: transparent !important;
+        border: none !important;
+        padding-left: 0 !important;
+    }
+    
+    .p-tabview-nav {
+        border-bottom: 1px solid var(--surface-border);
+    }
+
+    .settings-tabs .p-tabview-panels {
+        padding: 2rem 0;
+    }
+
+    .p-toggleswitch {
+        transform: scale(0.9);
+    }
+}
