@@ -181,13 +181,27 @@ public class TransferSuggestionService {
                         "Confidence " + confidence + "% is below minimum acceptance threshold (" + minAccept + "%)");
             }
 
-            // 2. Quantity clamping
+            // 2. Quantity constraints
             int minQty = settingsService.getInt("quantity.min");
             int maxQty = settingsService.getInt("quantity.max");
-            if (minQty > 0 && request.getQuantity() < minQty)
-                request.setQuantity(minQty);
-            if (maxQty > 0 && request.getQuantity() > maxQty)
-                request.setQuantity(maxQty);
+            String behavior = settingsService.getString("quantity.constraintBehavior"); // CLAMP or BLOCK
+
+            if ("BLOCK".equalsIgnoreCase(behavior)) {
+                if (minQty > 0 && request.getQuantity() < minQty) {
+                    throw new IllegalArgumentException(
+                            "Quantity " + request.getQuantity() + " is below minimum (" + minQty + ")");
+                }
+                if (maxQty > 0 && request.getQuantity() > maxQty) {
+                    throw new IllegalArgumentException(
+                            "Quantity " + request.getQuantity() + " exceeds maximum (" + maxQty + ")");
+                }
+            } else {
+                // Default: CLAMP
+                if (minQty > 0 && request.getQuantity() < minQty)
+                    request.setQuantity(minQty);
+                if (maxQty > 0 && request.getQuantity() > maxQty)
+                    request.setQuantity(maxQty);
+            }
 
             // 3. Safety Stock Rules
             if (settingsService.getBoolean("stock.safety.enabled")) {
@@ -221,7 +235,7 @@ public class TransferSuggestionService {
 
             // 4. Auto approve
             boolean autoApproveEnabled = settingsService.getBoolean("transfer.autoApprove.enabled");
-            int autoApproveThreshold = settingsService.getInt("confidence.minAutoApprove"); // Use correct key
+            int autoApproveThreshold = settingsService.getInt("transfer.autoApprove.threshold");
 
             if (autoApproveEnabled && confidence >= autoApproveThreshold) {
                 // Create TRANSFER directly

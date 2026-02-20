@@ -1,245 +1,128 @@
 <p-toast></p-toast>
-<div class="grid">
-    <div class="col-12">
-        <div class="card p-fluid">
-            <h5 class="flex align-items-center justify-content-between mb-4">
-                <span class="text-xl font-bold text-900">{{ 'settings.title' | translate }} <span class="text-500 font-normal">- Intelligent Inventory Orchestrator</span></span>
-                <div class="flex gap-2">
-                     <p-button label="{{ 'common.save' | translate }}" icon="pi pi-check" (onClick)="saveAll()" [loading]="saving" styleClass="p-button-primary"></p-button>
-                </div>
-            </h5>
-            <p class="text-color-secondary mb-4 line-height-3">{{ 'settings.description' | translate }}</p>
-
-            <p-tabs value="0" styleClass="settings-tabs">
-                <p-tablist>
-                    <p-tab value="0">
-                        <i class="pi pi-chart-line mr-2"></i>
-                        <span class="font-medium">Sales & Stock</span>
-                    </p-tab>
-                    <p-tab value="1">
-                        <i class="pi pi-bolt mr-2"></i>
-                        <span class="font-medium">AI Transfer Rules</span>
-                    </p-tab>
-                    <p-tab value="2">
-                        <i class="pi pi-box mr-2"></i>
-                        <span class="font-medium">Quantity Constraints</span>
-                    </p-tab>
-                    <p-tab value="3">
-                        <i class="pi pi-shield mr-2"></i>
-                        <span class="font-medium">Stock Safety</span>
-                    </p-tab>
-                    <p-tab value="4">
-                        <i class="pi pi-cog mr-2"></i>
-                        <span class="font-medium">Agent Behavior</span>
-                    </p-tab>
-                    <p-tab value="5">
-                        <i class="pi pi-list mr-2"></i>
-                        <span class="font-medium">Category Rules</span>
-                    </p-tab>
-                </p-tablist>
-                <p-tabpanels>
-                    <!-- Sales & Stock -->
-                    <p-tabpanel value="0">
-                        <div class="surface-ground p-4 border-round-xl">
-                            <div class="field grid align-items-center">
-                                <label class="col-12 md:col-3 font-semibold text-lg">Sales Lookback</label>
-                                <div class="col-12 md:col-9 flex align-items-center gap-4">
-                                    <p-toggleswitch [(ngModel)]="boolSettings['sales.lookback.enabled']"></p-toggleswitch>
-                                    <div *ngIf="boolSettings['sales.lookback.enabled']" class="flex align-items-center gap-2 fadein animation-duration-300">
-                                        <p-inputNumber [(ngModel)]="intSettings['sales.lookback.days']" suffix=" days" [min]="1" [max]="365" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="w-6rem text-center"></p-inputNumber>
-                                        <span class="text-600">Calculate sold qty & avg over this period</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </p-tabpanel>
-
-                    <!-- AI Transfer Rules -->
-                    <p-tabpanel value="1">
-                         <div class="grid">
-                            <div class="col-12 md:col-6">
-                                <p-panel header="Confidence Thresholds" styleClass="h-full">
-                                    <div class="field mb-5">
-                                        <label class="block mb-2 font-medium">Min Accept (<span class="text-primary font-bold">{{transferSettings.minAccept}}%</span>)</label>
-                                        <p-slider [(ngModel)]="transferSettings.minAccept" [min]="0" [max]="100" styleClass="w-full"></p-slider>
-                                        <small class="block mt-2 text-600">Minimum confidence to generate a visible suggestion.</small>
-                                    </div>
-                                    <div class="field mb-5">
-                                        <label class="block mb-2 font-medium">Min Approve (<span class="text-primary font-bold">{{transferSettings.minApprove}}%</span>)</label>
-                                        <p-slider [(ngModel)]="transferSettings.minApprove" [min]="0" [max]="100" styleClass="w-full"></p-slider>
-                                        <small class="block mt-2 text-600">Recommended threshold for manual approval.</small>
-                                    </div>
-                                    <div class="field mb-3">
-                                        <label class="block mb-2 font-medium">Auto-Approve (<span class="text-primary font-bold">{{transferSettings.minAutoApprove}}%</span>)</label>
-                                        <p-slider [(ngModel)]="transferSettings.minAutoApprove" [min]="0" [max]="100" styleClass="w-full"></p-slider>
-                                        <small class="block mt-2 text-600">Threshold for fully automated transfers.</small>
-                                    </div>
-                                </p-panel>
-                            </div>
-                            <div class="col-12 md:col-6">
-                                <p-panel header="Automation" styleClass="h-full">
-                                    <div class="field-checkbox mb-4 flex align-items-center gap-3">
-                                        <p-toggleswitch [(ngModel)]="boolSettings['transfer.autoApprove.enabled']"></p-toggleswitch>
-                                        <label class="font-medium text-lg">Enable Auto-Approve</label>
-                                    </div>
-                                    <div *ngIf="boolSettings['transfer.autoApprove.enabled']" class="field fadein animation-duration-300">
-                                        <label class="block font-medium mb-2">Auto-Approve Threshold Override</label>
-                                        <p-inputNumber [(ngModel)]="intSettings['transfer.autoApprove.threshold']" suffix="%" [min]="0" [max]="100" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
-                                        <small class="block mt-2 text-600">Suggestions with confidence &ge; this value will be created as approved Transfers directly.</small>
-                                    </div>
-                                    <div *ngIf="!boolSettings['transfer.autoApprove.enabled']" class="text-600 italic p-3 surface-ground border-round">
-                                        Auto-approval is currently disabled. All suggestions will require manual review.
-                                    </div>
-                                </p-panel>
-                            </div>
-                         </div>
-                    </p-tabpanel>
-
-                    <!-- Quantity Constraints -->
-                    <p-tabpanel value="2">
-                        <div class="grid">
-                            <div class="col-12 md:col-6">
-                                <div class="surface-card p-4 shadow-1 border-round h-full">
-                                    <div class="text-xl font-medium mb-3">Minimum Transfer</div>
-                                    <div class="field">
-                                        <p-inputNumber [(ngModel)]="intSettings['quantity.min']" [min]="1" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center w-full"></p-inputNumber>
-                                    </div>
-                                    <small class="text-600">Never suggest transfers smaller than this quantity to optimize logistics costs.</small>
-                                </div>
-                            </div>
-                            <div class="col-12 md:col-6">
-                                <div class="surface-card p-4 shadow-1 border-round h-full">
-                                    <div class="text-xl font-medium mb-3">Maximum Transfer</div>
-                                    <div class="field">
-                                        <p-inputNumber [(ngModel)]="intSettings['quantity.max']" [min]="1" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center w-full"></p-inputNumber>
-                                    </div>
-                                    <small class="text-600">Cap transfer suggestions at this value to prevent overstocking.</small>
-                                </div>
-                            </div>
-                        </div>
-                    </p-tabpanel>
-
-                    <!-- Stock Safety -->
-                    <p-tabpanel value="3">
-                        <div class="flex align-items-center gap-3 mb-4 p-3 surface-ground border-round">
-                            <p-toggleswitch [(ngModel)]="boolSettings['stock.safety.enabled']"></p-toggleswitch>
-                            <div class="flex flex-column">
-                                <label class="font-bold text-lg">Enable Safety Stock Logic</label>
-                                <span class="text-sm text-600">Prevents transfers that would deplete donor store stock below safe levels.</span>
-                            </div>
-                        </div>
-                        <div *ngIf="boolSettings['stock.safety.enabled']" class="grid fadein animation-duration-300">
-                            <div class="field col-12 md:col-6">
-                                <label class="block font-medium mb-2">Safety Days</label>
-                                <p-inputNumber [(ngModel)]="intSettings['stock.safety.days']" suffix=" days" [min]="0" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
-                                <small class="block mt-2 text-600">Ensure donor store retains at least X days of sales cover.</small>
-                            </div>
-                            <div class="field col-12 md:col-6">
-                                <label class="block font-medium mb-2">Absolute Minimum Quantity</label>
-                                <p-inputNumber [(ngModel)]="intSettings['stock.safety.minQty']" [min]="0" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
-                                <small class="block mt-2 text-600">Always keep at least this many units on hand at the donor store.</small>
-                            </div>
-                        </div>
-                    </p-tabpanel>
-
-                    <!-- Agent Behavior -->
-                    <p-tabpanel value="4">
-                        <div class="grid">
-                            <div class="col-12 md:col-6">
-                                <div class="field">
-                                    <label class="block font-medium mb-2">Agent Strategy</label>
-                                    <p-select [options]="agentModes" [(ngModel)]="strSettings['agent.mode']" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
-                                    <div class="mt-3 p-3 surface-ground border-round text-sm line-height-3">
-                                        <div *ngIf="strSettings['agent.mode'] === 'CONSERVATIVE'">
-                                            <strong>Conservative:</strong> Prioritizes stock safety over sales. Only suggests transfers with very high confidence and ample donor stock.
-                                        </div>
-                                        <div *ngIf="strSettings['agent.mode'] === 'BALANCED'">
-                                            <strong>Balanced:</strong> Aims for optimal trade-off between stock safety and potential sales. Standard thresholds apply.
-                                        </div>
-                                        <div *ngIf="strSettings['agent.mode'] === 'AGGRESSIVE'">
-                                            <strong>Aggressive:</strong> Maximizes potential sales. Willing to deplete donor stock closer to zero to fuel selling stores.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 md:col-6">
-                                <div class="field">
-                                    <label class="block font-medium mb-2">Max Suggestions Per Run</label>
-                                    <p-inputNumber [(ngModel)]="intSettings['maxSuggestions']" [min]="1" [max]="500" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
-                                    <small class="block mt-2 text-600">Limit the number of suggestions generated in one batch to verify incrementally.</small>
-                                </div>
-                            </div>
-                        </div>
-                    </p-tabpanel>
-
-                    <!-- Category Rules -->
-                    <p-tabpanel value="5">
-                         <p-table [value]="categorySettings" [loading]="loadingCategories" dataKey="id" editMode="row" styleClass="p-datatable-gridlines p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
-                            <ng-template pTemplate="header">
-                                <tr>
-                                    <th style="width: 20%">Category</th>
-                                    <th style="width: 15%">Min Qty</th>
-                                    <th style="width: 15%">Max Qty</th>
-                                    <th style="width: 15%">Min Confidence</th>
-                                    <th style="width: 15%">Auto Approve</th>
-                                    <th style="width: 20%">Status</th>
-                                </tr>
-                            </ng-template>
-                            <ng-template pTemplate="body" let-cat>
-                                <tr>
-                                    <td class="font-bold">{{ cat.category?.name || 'Unknown' }}</td>
-                                    <td pEditableColumn>
-                                        <p-cellEditor>
-                                            <ng-template pTemplate="input">
-                                                <p-inputNumber [(ngModel)]="cat.minQty"></p-inputNumber>
-                                            </ng-template>
-                                            <ng-template pTemplate="output">
-                                                {{cat.minQty}}
-                                            </ng-template>
-                                        </p-cellEditor>
-                                    </td>
-                                    <td pEditableColumn>
-                                        <p-cellEditor>
-                                            <ng-template pTemplate="input">
-                                                <p-inputNumber [(ngModel)]="cat.maxQty"></p-inputNumber>
-                                            </ng-template>
-                                            <ng-template pTemplate="output">
-                                                {{cat.maxQty}}
-                                            </ng-template>
-                                        </p-cellEditor>
-                                    </td>
-                                    <td pEditableColumn>
-                                        <p-cellEditor>
-                                            <ng-template pTemplate="input">
-                                                <p-inputNumber [(ngModel)]="cat.minConfidence" suffix="%"></p-inputNumber>
-                                            </ng-template>
-                                            <ng-template pTemplate="output">
-                                                {{cat.minConfidence}}%
-                                            </ng-template>
-                                        </p-cellEditor>
-                                    </td>
-                                    <td>
-                                        <p-toggleswitch [(ngModel)]="cat.autoApprove"></p-toggleswitch>
-                                    </td>
-                                    <td>
-                                        <span class="p-badge p-badge-info" *ngIf="cat.autoApprove">Automated</span>
-                                        <span class="p-badge p-badge-secondary" *ngIf="!cat.autoApprove">Manual</span>
-                                    </td>
-                                </tr>
-                            </ng-template>
-                            <ng-template pTemplate="emptymessage">
-                                <tr>
-                                    <td colspan="6" class="text-center p-4">{{ 'common.noData' | translate }}</td>
-                                </tr>
-                            </ng-template>
-                         </p-table>
-                         <div class="mt-3 flex justify-content-end align-items-center gap-2">
-                            <i class="pi pi-info-circle text-primary"></i>
-                            <small class="text-color-secondary">Click on cells to edit. Changes are saved when you click 'Save' at the top.</small>
-                         </div>
-                    </p-tabpanel>
-                </p-tabpanels>
-            </p-tabs>
+<div class="card">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h1 class="text-surface-900 dark:text-surface-0 text-3xl font-semibold mb-1">{{ 'settings.title' | translate }} <span class="text-muted-color font-normal text-xl">— Intelligent Inventory Orchestrator</span></h1>
+            <p class="text-muted-color">{{ 'settings.description' | translate }}</p>
         </div>
+        <p-button label="{{ 'common.save' | translate }}" icon="pi pi-check" (onClick)="saveAll()" [loading]="saving" styleClass="p-button-primary"></p-button>
     </div>
+
+    <p-tabs value="0">
+        <p-tablist>
+            <p-tab value="0"><i class="pi pi-chart-line mr-2"></i>Sales & Stock</p-tab>
+            <p-tab value="1"><i class="pi pi-bolt mr-2"></i>AI Transfer Rules</p-tab>
+            <p-tab value="2"><i class="pi pi-box mr-2"></i>Quantity Constraints</p-tab>
+            <p-tab value="3"><i class="pi pi-shield mr-2"></i>Stock Safety</p-tab>
+            <p-tab value="4"><i class="pi pi-cog mr-2"></i>Agent Behavior</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+
+            <!-- Sales & Stock -->
+            <p-tabpanel value="0">
+                <div class="flex items-center gap-4 py-2">
+                    <label class="text-base font-semibold w-36 shrink-0">Sales Lookback</label>
+                    <p-toggleswitch [(ngModel)]="boolSettings['sales.lookback.enabled']"></p-toggleswitch>
+                    <div *ngIf="boolSettings['sales.lookback.enabled']" class="flex items-center gap-3 fadein animation-duration-300">
+                        <p-inputNumber [(ngModel)]="intSettings['sales.lookback.days']" suffix=" days" [min]="1" [max]="365" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="w-20 text-center"></p-inputNumber>
+                        <span class="text-muted-color text-sm">Calculate sold qty & avg over this period</span>
+                    </div>
+                </div>
+            </p-tabpanel>
+
+            <!-- AI Transfer Rules -->
+            <p-tabpanel value="1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold text-base mb-4">Confidence Thresholds</h3>
+                        <div class="mb-4">
+                            <label class="block mb-2 text-sm font-medium">Min Accept (<span class="text-primary font-bold">{{transferSettings.minAccept}}%</span>)</label>
+                            <p-slider [(ngModel)]="transferSettings.minAccept" [min]="0" [max]="100" styleClass="w-full"></p-slider>
+                            <small class="block mt-2 text-muted-color">Minimum confidence to generate a visible suggestion.</small>
+                        </div>
+                    </div>
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold text-base mb-4">Automation</h3>
+                        <div class="flex items-center gap-3 mb-4">
+                            <p-toggleswitch [(ngModel)]="boolSettings['transfer.autoApprove.enabled']"></p-toggleswitch>
+                            <label class="font-medium">Enable Auto-Approve</label>
+                        </div>
+                        <div *ngIf="boolSettings['transfer.autoApprove.enabled']" class="fadein animation-duration-300">
+                            <label class="block text-sm font-medium mb-2">Auto-Approve Threshold</label>
+                            <p-inputNumber [(ngModel)]="intSettings['transfer.autoApprove.threshold']" suffix="%" [min]="0" [max]="100" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
+                            <small class="block mt-2 text-muted-color">Suggestions with confidence &ge; this value will be auto-approved.</small>
+                        </div>
+                        <div *ngIf="!boolSettings['transfer.autoApprove.enabled']" class="text-muted-color text-sm italic">
+                            Auto-approval disabled. All suggestions require manual review.
+                        </div>
+                    </div>
+                </div>
+            </p-tabpanel>
+
+            <!-- Quantity Constraints -->
+            <p-tabpanel value="2">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold text-base mb-3">Minimum Transfer</h3>
+                        <p-inputNumber [(ngModel)]="intSettings['quantity.min']" [min]="1" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center w-full" styleClass="w-full"></p-inputNumber>
+                        <small class="block mt-2 text-muted-color">Never suggest transfers smaller than this quantity.</small>
+                    </div>
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold text-base mb-3">Maximum Transfer</h3>
+                        <p-inputNumber [(ngModel)]="intSettings['quantity.max']" [min]="1" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center w-full" styleClass="w-full"></p-inputNumber>
+                        <small class="block mt-2 text-muted-color">Cap suggestions at this value to prevent overstocking.</small>
+                    </div>
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold text-base mb-3">Constraint Behavior</h3>
+                        <p-select [options]="constraintBehaviors" [(ngModel)]="strSettings['quantity.constraintBehavior']" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+                        <small class="block mt-2 text-muted-color">Adjust (Clamp) or reject (Block) out-of-range transfers.</small>
+                    </div>
+                </div>
+            </p-tabpanel>
+
+            <!-- Stock Safety -->
+            <p-tabpanel value="3">
+                <div class="flex items-center gap-3 mb-4">
+                    <p-toggleswitch [(ngModel)]="boolSettings['stock.safety.enabled']"></p-toggleswitch>
+                    <div>
+                        <div class="font-semibold">Enable Safety Stock Logic</div>
+                        <div class="text-sm text-muted-color">Prevents transfers that would deplete donor store below safe levels.</div>
+                    </div>
+                </div>
+                <div *ngIf="boolSettings['stock.safety.enabled']" class="grid grid-cols-1 md:grid-cols-2 gap-4 fadein animation-duration-300">
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <label class="block font-medium mb-2">Safety Days</label>
+                        <p-inputNumber [(ngModel)]="intSettings['stock.safety.days']" suffix=" days" [min]="0" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
+                        <small class="block mt-2 text-muted-color">Ensure donor retains at least X days of sales cover.</small>
+                    </div>
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <label class="block font-medium mb-2">Absolute Minimum Quantity</label>
+                        <p-inputNumber [(ngModel)]="intSettings['stock.safety.minQty']" [min]="0" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
+                        <small class="block mt-2 text-muted-color">Always keep at least this many units at the donor store.</small>
+                    </div>
+                </div>
+            </p-tabpanel>
+
+            <!-- Agent Behavior -->
+            <p-tabpanel value="4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <label class="block font-medium mb-2">Agent Strategy</label>
+                        <p-select [options]="agentModes" [(ngModel)]="strSettings['agent.mode']" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+                        <div class="mt-3 p-3 bg-surface-100 dark:bg-surface-700 rounded text-sm leading-relaxed">
+                            <div *ngIf="strSettings['agent.mode'] === 'CONSERVATIVE'"><strong>Conservative:</strong> Prioritizes stock safety. Only suggests high-confidence transfers with ample donor stock.</div>
+                            <div *ngIf="strSettings['agent.mode'] === 'BALANCED'"><strong>Balanced:</strong> Optimal trade-off between stock safety and potential sales.</div>
+                            <div *ngIf="strSettings['agent.mode'] === 'AGGRESSIVE'"><strong>Aggressive:</strong> Maximizes sales. Willing to deplete donor stock closer to zero.</div>
+                        </div>
+                    </div>
+                    <div class="border border-surface-border rounded p-4 bg-surface-50 dark:bg-surface-800">
+                        <label class="block font-medium mb-2">Max Suggestions Per Run</label>
+                        <p-inputNumber [(ngModel)]="intSettings['maxSuggestions']" [min]="1" [max]="500" [showButtons]="true" buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" inputStyleClass="text-center"></p-inputNumber>
+                        <small class="block mt-2 text-muted-color">Limit the number of suggestions in one batch for incremental verification.</small>
+                    </div>
+                </div>
+            </p-tabpanel>
+
+        </p-tabpanels>
+    </p-tabs>
 </div>

@@ -1,9 +1,7 @@
 package com.inventory.orchestrator.service;
 
 import com.inventory.orchestrator.entity.AppSettings;
-import com.inventory.orchestrator.entity.CategorySettings;
 import com.inventory.orchestrator.repository.AppSettingsRepository;
-import com.inventory.orchestrator.repository.CategorySettingsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +15,6 @@ import java.util.Optional;
 public class SettingsService {
 
     private final AppSettingsRepository appSettingsRepository;
-    private final CategorySettingsRepository categorySettingsRepository;
 
     private static final Map<String, String> DEFAULTS = new HashMap<>();
 
@@ -36,12 +33,11 @@ public class SettingsService {
         DEFAULTS.put("stock.safety.minQty", "3");
         DEFAULTS.put("agent.mode", "BALANCED");
         DEFAULTS.put("maxSuggestions", "50");
+        DEFAULTS.put("quantity.constraintBehavior", "CLAMP");
     }
 
-    public SettingsService(AppSettingsRepository appSettingsRepository,
-            CategorySettingsRepository categorySettingsRepository) {
+    public SettingsService(AppSettingsRepository appSettingsRepository) {
         this.appSettingsRepository = appSettingsRepository;
-        this.categorySettingsRepository = categorySettingsRepository;
     }
 
     public String getString(String key) {
@@ -90,21 +86,4 @@ public class SettingsService {
         }
     }
 
-    public List<CategorySettings> getAllCategorySettings() {
-        return categorySettingsRepository.findAll();
-    }
-
-    public Optional<CategorySettings> getCategorySettings(Long categoryId) {
-        return categorySettingsRepository.findByCategoryId(categoryId);
-    }
-
-    @Transactional
-    public CategorySettings saveCategorySettings(CategorySettings settings) {
-        return categorySettingsRepository.save(settings);
-    }
-
-    @Transactional
-    public List<CategorySettings> saveCategorySettingsList(List<CategorySettings> settingsList) {
-        return categorySettingsRepository.saveAll(settingsList);
-    }
 }

@@ -83,12 +83,15 @@ interface LazyLoadEvent {
                                                 icon="pi pi-check" 
                                                 size="small"
                                                 [loading]="approvingId === suggestion.id"
+                                                [disabled]="approvingId !== null || dismissingId !== null"
                                                 (onClick)="approveTransfer(suggestion)"></p-button>
                                             <p-button 
                                                 [label]="'transfers.dismiss' | translate" 
                                                 icon="pi pi-times" 
                                                 size="small"
                                                 severity="secondary"
+                                                [loading]="dismissingId === suggestion.id"
+                                                [disabled]="approvingId !== null || dismissingId !== null"
                                                 (onClick)="openRejectModal(suggestion)"></p-button>
                                         </div>
                                     </div>
@@ -394,6 +397,7 @@ export class TransfersComponent implements OnInit {
     rejectedSortOrder: number = -1;
 
     approvingId: string | null = null;
+    dismissingId: string | null = null;
 
     ngOnInit() {
         this.loadSuggestions();
@@ -429,16 +433,20 @@ export class TransfersComponent implements OnInit {
     confirmReject() {
         if (!this.suggestionToReject) return;
         this.rejecting = true;
+        this.dismissingId = this.suggestionToReject.id;
         this.transferService.rejectSuggestion(this.suggestionToReject.id, this.rejectNote).subscribe({
             next: () => {
                 this.rejecting = false;
-                this.suggestions = this.suggestions.filter(s => s.id !== this.suggestionToReject!.id);
+                this.dismissingId = null;
                 this.closeRejectModal();
+                // Always reload from backend — never mutate local array
+                this.loadSuggestions();
                 this.loadRejectedTransfersLazy({ first: 0, rows: this.rejectedPageSize, sortField: this.rejectedSortField, sortOrder: this.rejectedSortOrder });
             },
             error: (err) => {
                 console.error('Error rejecting suggestion:', err);
                 this.rejecting = false;
+                this.dismissingId = null;
             }
         });
     }
@@ -575,7 +583,8 @@ export class TransfersComponent implements OnInit {
             next: () => {
                 this.approvingId = null;
                 this.loadTransfersDataLazy({ first: 0, rows: this.pageSize, sortField: this.currentSortField, sortOrder: this.currentSortOrder });
-                this.suggestions = this.suggestions.filter(s => s.id !== suggestion.id);
+                // Always reload from backend — never mutate local array
+                this.loadSuggestions();
             },
             error: (error) => {
                 console.error('Error approving transfer:', error);
