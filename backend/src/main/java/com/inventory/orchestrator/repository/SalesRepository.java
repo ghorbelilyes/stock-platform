@@ -14,138 +14,129 @@ import java.util.List;
 
 @Repository
 public interface SalesRepository extends JpaRepository<Sales, Long> {
-    
-    List<Sales> findByIdStore(Long idStore);
-    
-    List<Sales> findByIdProduct(Long idProduct);
-    
-    List<Sales> findByRangeDateBetween(LocalDateTime startDate, LocalDateTime endDate);
-    
-    // Find existing sales by store, product, and date (same day)
-    @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.idProduct = :productId " +
-           "AND FUNCTION('DATE', s.rangeDate) = FUNCTION('DATE', :rangeDate)")
-    List<Sales> findByStoreProductAndDate(
-        @Param("storeId") Long storeId,
-        @Param("productId") Long productId,
-        @Param("rangeDate") LocalDateTime rangeDate
-    );
-    
-    @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate")
-    Page<Sales> findByStoreAndDateRange(
-        @Param("storeId") Long idStore,
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
-    );
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p",
-        countQuery = "SELECT COUNT(s) FROM Sales s"
-    )
-    Page<SalesView> findAllViews(Pageable pageable);
+        List<Sales> findByIdStore(Long idStore);
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p " +
-        "WHERE s.idStore = :storeId",
-        countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idStore = :storeId"
-    )
-    Page<SalesView> findByIdStoreView(@Param("storeId") Long storeId, Pageable pageable);
+        List<Sales> findByIdProduct(Long idProduct);
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p " +
-        "WHERE s.idProduct = :productId",
-        countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idProduct = :productId"
-    )
-    Page<SalesView> findByIdProductView(@Param("productId") Long productId, Pageable pageable);
+        List<Sales> findByRangeDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p " +
-        "WHERE s.rangeDate BETWEEN :startDate AND :endDate",
-        countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.rangeDate BETWEEN :startDate AND :endDate"
-    )
-    Page<SalesView> findByRangeDateBetweenView(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate, Pageable pageable);
+        // Find existing sales by store, product, and date (same day)
+        @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.idProduct = :productId " +
+                        "AND FUNCTION('DATE', s.rangeDate) = FUNCTION('DATE', :rangeDate)")
+        List<Sales> findByStoreProductAndDate(
+                        @Param("storeId") Long storeId,
+                        @Param("productId") Long productId,
+                        @Param("rangeDate") LocalDateTime rangeDate);
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p " +
-        "WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate",
-        countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate"
-    )
-    Page<SalesView> findByStoreAndDateRangeView(
-        @Param("storeId") Long storeId,
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
-    );
+        @Query("SELECT s FROM Sales s WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate")
+        Page<Sales> findByStoreAndDateRange(
+                        @Param("storeId") Long idStore,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
 
-    @Query(
-        value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
-            "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
-            "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
-            "p.id, p.codeBarre, p.name, p.description" +
-        ") " +
-        "FROM Sales s JOIN s.store st JOIN s.product p " +
-        "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
-        "AND (:productId IS NULL OR s.idProduct = :productId) " +
-        "AND s.rangeDate >= :startDate " +
-        "AND s.rangeDate <= :endDate " +
-        "AND (:search IS NULL OR " +
-            "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-            "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-            "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-            "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
-        ") " +
-        "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) " +
-        "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) " +
-        "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))",
-        countQuery = "SELECT COUNT(s) FROM Sales s JOIN s.store st JOIN s.product p " +
-            "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
-            "AND (:productId IS NULL OR s.idProduct = :productId) " +
-            "AND s.rangeDate >= :startDate " +
-            "AND s.rangeDate <= :endDate " +
-            "AND (:search IS NULL OR " +
-                "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-                "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-                "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
-                "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
-            ") " +
-            "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) " +
-            "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) " +
-            "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))"
-    )
-    Page<SalesView> findViewsWithFilters(
-        @Param("storeId") Long storeId,
-        @Param("productId") Long productId,
-        @Param("search") String search,
-        @Param("storeName") String storeName,
-        @Param("productName") String productName,
-        @Param("city") String city,
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
-    );
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p", countQuery = "SELECT COUNT(s) FROM Sales s")
+        Page<SalesView> findAllViews(Pageable pageable);
+
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p " +
+                        "WHERE s.idStore = :storeId", countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idStore = :storeId")
+        Page<SalesView> findByIdStoreView(@Param("storeId") Long storeId, Pageable pageable);
+
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p " +
+                        "WHERE s.idProduct = :productId", countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idProduct = :productId")
+        Page<SalesView> findByIdProductView(@Param("productId") Long productId, Pageable pageable);
+
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p " +
+                        "WHERE s.rangeDate BETWEEN :startDate AND :endDate", countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.rangeDate BETWEEN :startDate AND :endDate")
+        Page<SalesView> findByRangeDateBetweenView(@Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate, Pageable pageable);
+
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p " +
+                        "WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate", countQuery = "SELECT COUNT(s) FROM Sales s WHERE s.idStore = :storeId AND s.rangeDate BETWEEN :startDate AND :endDate")
+        Page<SalesView> findByStoreAndDateRangeView(
+                        @Param("storeId") Long storeId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
+
+        @Query(value = "SELECT new com.inventory.orchestrator.dto.SalesView(" +
+                        "s.id, s.rangeDate, s.idStore, s.idProduct, s.quantity, " +
+                        "st.id, st.serialNumber, st.name, st.city, st.type, st.leadTimeDays, " +
+                        "p.id, p.codeBarre, p.name, p.description" +
+                        ") " +
+                        "FROM Sales s JOIN s.store st JOIN s.product p " +
+                        "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
+                        "AND (:productId IS NULL OR s.idProduct = :productId) " +
+                        "AND s.rangeDate >= :startDate " +
+                        "AND s.rangeDate <= :endDate " +
+                        "AND (:search IS NULL OR " +
+                        "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                        "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                        "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                        "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
+                        ") " +
+                        "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) "
+                        +
+                        "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) "
+                        +
+                        "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))", countQuery = "SELECT COUNT(s) FROM Sales s JOIN s.store st JOIN s.product p "
+                                        +
+                                        "WHERE (:storeId IS NULL OR s.idStore = :storeId) " +
+                                        "AND (:productId IS NULL OR s.idProduct = :productId) " +
+                                        "AND s.rangeDate >= :startDate " +
+                                        "AND s.rangeDate <= :endDate " +
+                                        "AND (:search IS NULL OR " +
+                                        "LOWER(st.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                                        "LOWER(st.city) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                                        "LOWER(p.name) LIKE CONCAT('%', CAST(:search AS string), '%') OR " +
+                                        "LOWER(p.codeBarre) LIKE CONCAT('%', CAST(:search AS string), '%')" +
+                                        ") " +
+                                        "AND (:storeName IS NULL OR LOWER(st.name) LIKE CONCAT('%', CAST(:storeName AS string), '%')) "
+                                        +
+                                        "AND (:productName IS NULL OR LOWER(p.name) LIKE CONCAT('%', CAST(:productName AS string), '%')) "
+                                        +
+                                        "AND (:city IS NULL OR LOWER(st.city) LIKE CONCAT('%', CAST(:city AS string), '%'))")
+        Page<SalesView> findViewsWithFilters(
+                        @Param("storeId") Long storeId,
+                        @Param("productId") Long productId,
+                        @Param("search") String search,
+                        @Param("storeName") String storeName,
+                        @Param("productName") String productName,
+                        @Param("city") String city,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        Pageable pageable);
+
+        @Query("SELECT s.idStore, s.idProduct, SUM(s.quantity) FROM Sales s WHERE s.rangeDate BETWEEN :startDate AND :endDate GROUP BY s.idStore, s.idProduct")
+        List<Object[]> sumSalesByStoreAndProductBetween(@Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT MAX(s.rangeDate) FROM Sales s")
+        LocalDateTime findMaxDate();
 }

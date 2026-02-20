@@ -29,65 +29,65 @@ import java.util.List;
 @RequestMapping("/transfers")
 @CrossOrigin(origins = "*")
 public class TransferController {
-    
+
     private final TransferRepository transferRepository;
     private final TransferSuggestionService suggestionService;
-    
+
     @Autowired
     public TransferController(TransferRepository transferRepository, TransferSuggestionService suggestionService) {
         this.transferRepository = transferRepository;
         this.suggestionService = suggestionService;
     }
-    
+
     @GetMapping
     public ResponseEntity<ApiResponse<Page<TransferView>>> getAllTransfers(
-        @RequestParam(required = false) Long storeSent,
-        @RequestParam(required = false) Long storeReceive,
-        @RequestParam(required = false) Long productId,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-        @RequestParam(required = false) String sort,
-        @RequestParam(required = false) String search,
-        @RequestParam(required = false) String status,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size
-    ) {
-        if (page < 0) page = 0;
-        if (size < 1) size = 20;
-        if (size > 100) size = 100;
-        
+            @RequestParam(required = false) Long storeSent,
+            @RequestParam(required = false) Long storeReceive,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        if (page < 0)
+            page = 0;
+        if (size < 1)
+            size = 20;
+        if (size > 100)
+            size = 100;
+
         Sort sortObj = parseSortParameter(sort);
         Pageable pageable = PageRequest.of(page, size, sortObj);
-        
+
         // Convert LocalDate to LocalDateTime for query (start of day to end of day)
         // Use sentinel values when null to ensure parameters are always typed
-        LocalDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay() : LocalDateTime.of(1900, 1, 1, 0, 0);
-        LocalDateTime endDateTime = (endDate != null) ? endDate.atTime(23, 59, 59) : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
-        
+        LocalDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay()
+                : LocalDateTime.of(1900, 1, 1, 0, 0);
+        LocalDateTime endDateTime = (endDate != null) ? endDate.atTime(23, 59, 59)
+                : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
         Page<TransferView> transfers = transferRepository.findTransfersWithFiltersView(
-            storeSent,
-            storeReceive,
-            productId,
-            startDateTime,
-            endDateTime,
-            normalize(search),
-            status != null ? status.trim() : null,
-            pageable
-        );
-        
+                storeSent,
+                storeReceive,
+                productId,
+                startDateTime,
+                endDateTime,
+                normalize(search),
+                status != null ? status.trim() : null,
+                pageable);
+
         return ResponseEntity.ok(ApiResponse.success(transfers, "Transfers retrieved successfully"));
     }
 
     @GetMapping("/by-store-and-product")
-    @Operation(
-        summary = "Get transfers by store and product",
-        description = "Returns all transfers where the store is either source or destination and the product matches. Used for stock row expansion."
-    )
+    @Operation(summary = "Get transfers by store and product", description = "Returns all transfers where the store is either source or destination and the product matches. Used for stock row expansion.")
     public ResponseEntity<ApiResponse<List<TransferView>>> getTransfersByStoreAndProduct(
-        @Parameter(description = "Store ID (involved as sender or receiver)", required = true) @RequestParam Long storeId,
-        @Parameter(description = "Product ID", required = true) @RequestParam Long productId
-    ) {
-        List<TransferView> list = transferRepository.findTransfersByStoreAndProduct(storeId, productId);
+            @Parameter(description = "Store ID (involved as sender or receiver)", required = true) @RequestParam Long storeId,
+            @Parameter(description = "Product ID", required = true) @RequestParam Long productId,
+            @Parameter(description = "List of statuses to filter by") @RequestParam(name = "list", required = false) List<String> statuses) {
+        List<TransferView> list = transferRepository.findTransfersByStoreAndProduct(storeId, productId, statuses);
         return ResponseEntity.ok(ApiResponse.success(list, "Transfers retrieved successfully"));
     }
 
@@ -98,17 +98,18 @@ public class TransferController {
     }
 
     @PostMapping("/suggestions")
-    public ResponseEntity<ApiResponse<TransferSuggestion>> createSuggestion(@RequestBody CreateTransferSuggestionRequest request) {
+    public ResponseEntity<ApiResponse<TransferSuggestion>> createSuggestion(
+            @RequestBody CreateTransferSuggestionRequest request) {
         if (request == null) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_REQUEST", "Request body is required", List.of()));
+                    .body(ApiResponse.error("INVALID_REQUEST", "Request body is required", List.of()));
         }
         try {
             TransferSuggestion suggestion = suggestionService.createSuggestion(request);
             return ResponseEntity.ok(ApiResponse.success(suggestion, "Transfer suggestion created successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_REQUEST", e.getMessage(), List.of()));
+                    .body(ApiResponse.error("INVALID_REQUEST", e.getMessage(), List.of()));
         }
     }
 
@@ -116,17 +117,16 @@ public class TransferController {
     public ResponseEntity<ApiResponse<Transfer>> approveSuggestion(@RequestBody ApproveSuggestionRequest request) {
         if (request == null || request.getSuggestionId() == null || request.getSuggestionId().isBlank()) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
+                    .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
         }
         try {
             Transfer transfer = suggestionService.approveSuggestion(
-                request.getSuggestionId().trim(),
-                request.getQuantity()
-            );
+                    request.getSuggestionId().trim(),
+                    request.getQuantity());
             return ResponseEntity.ok(ApiResponse.success(transfer, "Transfer created successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
+                    .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
         }
     }
 
@@ -134,17 +134,16 @@ public class TransferController {
     public ResponseEntity<ApiResponse<Transfer>> rejectSuggestion(@RequestBody RejectSuggestionRequest request) {
         if (request == null || request.getSuggestionId() == null || request.getSuggestionId().isBlank()) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
+                    .body(ApiResponse.error("INVALID_REQUEST", "suggestionId is required", List.of()));
         }
         try {
             Transfer transfer = suggestionService.rejectSuggestion(
-                request.getSuggestionId().trim(),
-                request.getNote()
-            );
+                    request.getSuggestionId().trim(),
+                    request.getNote());
             return ResponseEntity.ok(ApiResponse.success(transfer, "Transfer suggestion rejected"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
+                    .body(ApiResponse.error("INVALID_SUGGESTION", e.getMessage(), List.of()));
         }
     }
 
@@ -152,33 +151,34 @@ public class TransferController {
         if (sort == null || sort.trim().isEmpty()) {
             return Sort.by(Sort.Direction.DESC, "date");
         }
-        
+
         String[] parts = sort.split(",");
         String field = parts[0].trim();
-        
+
         if (!isValidSortField(field)) {
             field = "date";
         }
-        
+
         if (parts.length > 1) {
             String direction = parts[1].trim().toLowerCase();
             if ("desc".equals(direction)) {
                 return Sort.by(Sort.Direction.DESC, field);
             }
         }
-        
+
         return Sort.by(Sort.Direction.ASC, field);
     }
-    
+
     private boolean isValidSortField(String field) {
         if (field == null || field.isEmpty()) {
             return false;
         }
         return field.matches("^[a-zA-Z0-9_]+$");
     }
-    
+
     private String normalize(String value) {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed.toLowerCase();
     }

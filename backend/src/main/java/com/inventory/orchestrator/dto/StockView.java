@@ -6,14 +6,29 @@ public class StockView {
     private Integer quantity;
     /** Suggested quantity for transfer based on transfer suggestions */
     private Integer suggestionQuantity;
-    /** Sum of quantities from transfers (status approved or in_transit) to this store for this product - Incoming */
+    /**
+     * Sum of quantities from transfers (status in_transit) to this store for this
+     * product - Incoming
+     */
     private Integer incomingQty;
-    /** Sum of quantities from transfers (status in_transit) from this store for this product - In Transit (outgoing) */
+    /**
+     * Sum of quantities from transfers (status in_transit) from this store for this
+     * product - In Transit (outgoing)
+     */
     private Integer outToTransit;
-    /** Sum of quantities from transfers (status approved) from this store for this product - Reserved (approved but not in_transit) */
+    /**
+     * Sum of quantities from transfers (status approved) from this store for this
+     * product - Reserved (approved but not in_transit)
+     */
     private Integer quantityForTransfer;
     private StoreInfo store;
     private ProductInfo product;
+    /** Total quantity sold in the last 30 days */
+    private Integer soldLast30Days;
+    /** Average daily sales (soldLast30Days / 30) */
+    private Double avgDailySales;
+    /** Days of cover (current stock / avgDailySales) */
+    private Double daysOfCover;
 
     public StockView(
             Long idStore,
@@ -28,8 +43,7 @@ public class StockView {
             Long productId,
             String productCodeBarre,
             String productName,
-            String productDescription
-    ) {
+            String productDescription) {
         this.idStore = idStore;
         this.idProduct = idProduct;
         this.quantity = quantity;
@@ -39,8 +53,11 @@ public class StockView {
         this.incomingQty = 0;
         this.outToTransit = 0;
         this.quantityForTransfer = 0;
+        this.soldLast30Days = 0;
+        this.avgDailySales = 0.0;
+        this.daysOfCover = 0.0;
     }
-    
+
     public StockView(
             Long idStore,
             Long idProduct,
@@ -55,8 +72,7 @@ public class StockView {
             Long productId,
             String productCodeBarre,
             String productName,
-            String productDescription
-    ) {
+            String productDescription) {
         this.idStore = idStore;
         this.idProduct = idProduct;
         this.quantity = quantity;
@@ -66,6 +82,9 @@ public class StockView {
         this.incomingQty = 0;
         this.outToTransit = 0;
         this.quantityForTransfer = 0;
+        this.soldLast30Days = 0;
+        this.avgDailySales = 0.0;
+        this.daysOfCover = 0.0;
     }
 
     public Long getIdStore() {
@@ -79,11 +98,11 @@ public class StockView {
     public Integer getQuantity() {
         return quantity;
     }
-    
+
     public Integer getSuggestionQuantity() {
         return suggestionQuantity;
     }
-    
+
     public void setSuggestionQuantity(Integer suggestionQuantity) {
         this.suggestionQuantity = suggestionQuantity;
     }
@@ -111,7 +130,7 @@ public class StockView {
     public void setQuantityForTransfer(Integer quantityForTransfer) {
         this.quantityForTransfer = quantityForTransfer;
     }
-    
+
     // Legacy method for backward compatibility
     @Deprecated
     public Integer getOutgoingQty() {
@@ -120,7 +139,8 @@ public class StockView {
 
     @Deprecated
     public void setOutgoingQty(Integer outgoingQty) {
-        // For backward compatibility, split between outToTransit and quantityForTransfer
+        // For backward compatibility, split between outToTransit and
+        // quantityForTransfer
         // Default to outToTransit if we can't determine
         this.outToTransit = outgoingQty != null ? outgoingQty : 0;
         this.quantityForTransfer = 0;
@@ -132,6 +152,30 @@ public class StockView {
 
     public ProductInfo getProduct() {
         return product;
+    }
+
+    public Integer getSoldLast30Days() {
+        return soldLast30Days;
+    }
+
+    public void setSoldLast30Days(Integer soldLast30Days) {
+        this.soldLast30Days = soldLast30Days;
+    }
+
+    public Double getAvgDailySales() {
+        return avgDailySales;
+    }
+
+    public void setAvgDailySales(Double avgDailySales) {
+        this.avgDailySales = avgDailySales;
+    }
+
+    public Double getDaysOfCover() {
+        return daysOfCover;
+    }
+
+    public void setDaysOfCover(Double daysOfCover) {
+        this.daysOfCover = daysOfCover;
     }
 
     public static class StoreInfo {

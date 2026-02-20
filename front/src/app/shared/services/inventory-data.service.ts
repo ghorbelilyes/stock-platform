@@ -188,10 +188,17 @@ export class InventoryDataService {
     }
 
     /** Get transfers where the given store is source or destination and product matches. Used for stock row expansion. */
-    getTransfersByStoreAndProduct(storeId: number, productId: number): Observable<any[]> {
-        const params = new HttpParams()
+    getTransfersByStoreAndProduct(storeId: number, productId: number, statuses?: string[]): Observable<any[]> {
+        let params = new HttpParams()
             .set('storeId', storeId.toString())
             .set('productId', productId.toString());
+
+        if (statuses && statuses.length > 0) {
+            statuses.forEach(status => {
+                params = params.append('list', status);
+            });
+        }
+
         return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}${API_CONFIG.endpoints.transfers}/by-store-and-product`, { params })
             .pipe(
                 map(response => (response?.data != null && Array.isArray(response.data)) ? response.data : []),
